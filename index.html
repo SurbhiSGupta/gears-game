@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#fbefdc" />
+    <title>Bodai Gears · Workbench</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <svg id="hints" aria-hidden="true"></svg>
+
+    <header class="hud-top">
+      <div class="brand">Bodai Gears <span>Workbench</span></div>
+      <ol id="steps"></ol>
+    </header>
+
+    <div class="hud-right">
+      <div id="lives" hidden></div>
+      <button id="btn-restart" title="Start over">↺</button>
+      <button id="btn-hint" title="Show a hint">💡</button>
+      <button id="btn-view" title="Reset the view">⤢</button>
+      <button id="btn-tune" title="Tune the feel">⚙︎</button>
+    </div>
+
+    <div id="bubble" hidden></div>
+
+    <div id="tag-pedal" class="tag"></div>
+    <div id="tag-wheel" class="tag"></div>
+    <div id="callout"></div>
+
+    <div id="cta" hidden>
+      <button id="btn-how" class="secondary">See how it works</button>
+      <button id="btn-scene">Take it back to the scene →</button>
+    </div>
+
+    <div id="modal" hidden>
+      <div class="card">
+        <p id="modal-text"></p>
+        <div class="modal-actions">
+          <button id="modal-btn2" class="secondary" hidden></button>
+          <button id="modal-btn"></button>
+        </div>
+      </div>
+    </div>
+
+    <aside id="tune" hidden></aside>
+    <div id="rotate-tip" hidden>Tip: turn your phone sideways for more room</div>
+
+    <div id="start">
+      <div class="card">
+        <h1>Let's finish the bike!</h1>
+        <p>Mom and her daughter have the frame ready. Your job: the gears.</p>
+        <button id="btn-start">Start</button>
+        <p class="small">Sound on 🔊</p>
+      </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
