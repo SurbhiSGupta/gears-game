@@ -27,6 +27,15 @@ export class CameraRig {
     this.goal.pol = clamp(this.goal.pol - dy * 0.006, 0.3, 1.52);
   }
 
+  // Slide the view sideways and up/down (two-finger drag), staying around the workshop
+  pan(dx, dy) {
+    const s = this.goal.dist * 0.0013;
+    const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 0);
+    const up = new THREE.Vector3().setFromMatrixColumn(this.camera.matrixWorld, 1);
+    const t = this.goal.target.addScaledVector(right, -dx * s).addScaledVector(up, dy * s);
+    t.set(clamp(t.x, -1, 1.6), clamp(t.y, 0, 1), clamp(t.z, -0.6, 0.8));
+  }
+
   zoom(factor) {
     this.goal.dist = clamp(this.goal.dist * factor, 0.14, 4.5);
   }

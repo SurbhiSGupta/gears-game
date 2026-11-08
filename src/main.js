@@ -350,6 +350,8 @@ function toolboxView() {
 
 // ---------- Messages, steps and hints ----------
 let sayTimer = 0;
+let quietTimer = 0;
+const compact = window.matchMedia('(max-width: 640px), (max-height: 520px)');
 function say(text, mood = '', ms = 0) {
   const b = $('bubble');
   b.textContent = text;
@@ -357,6 +359,13 @@ function say(text, mood = '', ms = 0) {
   b.hidden = false;
   clearTimeout(sayTimer);
   if (ms) sayTimer = setTimeout(() => currentStep() && say(currentStep().say), ms);
+  quietLater();
+}
+
+// On phones the message fades once it's been read; the progress pill still shows the step
+function quietLater() {
+  clearTimeout(quietTimer);
+  if (compact.matches) quietTimer = setTimeout(() => $('bubble').classList.add('quiet'), 5000);
 }
 
 const stepDone = {
@@ -1215,7 +1224,12 @@ function onDown(e) {
   if (pointers.size === 2) {
     endGesture(true);
     const [a, b] = [...pointers.values()];
-    gesture = { type: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y) };
+    gesture = { type: 'pinch', d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
+    return;
+  }
+  // Laptops: right-drag or Shift-drag slides the view
+  if (e.button === 2 || e.shiftKey) {
+    gesture = { type: 'pan' };
     return;
   }
   if (pointers.size > 2) return;
@@ -1263,6 +1277,14 @@ function onMove(e) {
     const d = Math.hypot(a.x - b.x, a.y - b.y);
     if (g.d > 0 && d > 0) rig.zoom(g.d / d);
     g.d = d;
+    // Moving both fingers together slides the view
+    const mx = (a.x + b.x) / 2;
+    const my = (a.y + b.y) / 2;
+    rig.pan(mx - g.mx, my - g.my);
+    g.mx = mx;
+    g.my = my;
+  } else if (g.type === 'pan') {
+    rig.pan(dx, dy);
   } else if (g.type === 'orbit') {
     rig.orbit(dx, dy);
   } else if (g.type === 'drag') {
@@ -1397,6 +1419,8 @@ $('btn-how').onclick = () => howItWorks();
 // Phones: tap the progress dots to see every step, and it tucks away again by itself
 let listTimer = 0;
 $('progress').onclick = () => {
+  $('bubble').classList.remove('quiet');
+  quietLater();
   const list = $('steps-list');
   list.hidden = !list.hidden;
   clearTimeout(listTimer);
@@ -1406,7 +1430,8 @@ $('btn-tune').onclick = () => ($('tune').hidden = !$('tune').hidden);
 
 function buildTunePanel() {
   const panel = $('tune');
-  panel.innerHTML = '<h2>Tune the feel</h2>';
+  const version = document.querySelector('meta[name="version"]')?.content ?? '';
+  panel.innerHTML = `<h2>Tune the feel <small>${version}</small></h2>`;
   const fmt = (v) => (Math.round(v * 100) / 100).toString();
   for (const s of tuneSpec) {
     const row = document.createElement('label');

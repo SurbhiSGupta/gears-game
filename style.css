@@ -253,6 +253,15 @@ button {
   transition: background 0.2s;
 }
 
+#bubble {
+  transition: background 0.2s, opacity 0.5s, transform 0.5s;
+}
+
+#bubble.quiet {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
 #bubble.oops {
   background: #ffe7d6;
 }
@@ -427,6 +436,13 @@ button {
   margin: 0 0 10px;
   font-size: 16px;
   font-weight: 900;
+}
+
+#tune h2 small {
+  font-size: 11px;
+  font-weight: 800;
+  opacity: 0.5;
+  margin-left: 6px;
 }
 
 #tune .row {
