@@ -35,15 +35,24 @@
       <button id="btn-tune" title="Tune the feel">⚙︎</button>
     </div>
 
-    <div id="bubble" hidden></div>
-
     <div id="tag-pedal" class="tag"></div>
     <div id="tag-wheel" class="tag"></div>
     <div id="callout"></div>
 
-    <div id="cta" hidden>
-      <button id="btn-how" class="secondary">See how it works</button>
-      <button id="btn-scene">Take it back to the scene →</button>
+    <!-- Bottom dock: buttons, compact step progress (phones only) and the message -->
+    <div id="dock">
+      <div id="cta" hidden>
+        <button id="btn-how" class="secondary">See how it works</button>
+        <button id="btn-scene">Take it back to the scene →</button>
+      </div>
+      <div id="progress-wrap">
+        <ol id="steps-list" hidden></ol>
+        <button id="progress" aria-label="Show all steps">
+          <span id="progress-dots"></span>
+          <span id="progress-label"></span>
+        </button>
+      </div>
+      <div id="bubble" hidden></div>
     </div>
 
     <div id="modal" hidden>

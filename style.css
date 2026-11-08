@@ -137,11 +137,110 @@ button {
   color: var(--coral);
 }
 
-#bubble {
+/* ---------- Bottom dock: buttons, step progress and the message ---------- */
+#dock {
   position: fixed;
   left: 50%;
   bottom: max(18px, env(safe-area-inset-bottom));
   transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+#dock button {
+  pointer-events: auto;
+}
+
+/* Compact progress: only on phones (see the media query at the end) */
+#progress-wrap {
+  position: relative;
+  display: none;
+}
+
+#progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 250, 242, 0.92);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+#progress-dots {
+  display: flex;
+  gap: 5px;
+}
+
+#progress-dots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(43, 42, 69, 0.18);
+}
+
+#progress-dots i.done {
+  background: var(--teal);
+}
+
+#progress-dots i.now {
+  background: var(--sun);
+  box-shadow: 0 0 0 2px var(--ink);
+}
+
+#steps-list {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  counter-reset: step;
+  white-space: nowrap;
+}
+
+#steps-list li {
+  counter-increment: step;
+  padding: 4px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: rgba(43, 42, 69, 0.5);
+}
+
+#steps-list li::before {
+  content: counter(step) '  ';
+}
+
+#steps-list li.now {
+  background: var(--sun);
+  color: var(--ink);
+}
+
+#steps-list li.done {
+  color: var(--teal-dark);
+}
+
+#steps-list li.done::before {
+  content: '✓  ';
+}
+
+#bubble {
   max-width: min(560px, calc(100vw - 32px));
   padding: 12px 20px;
   border-radius: 20px;
@@ -163,14 +262,8 @@ button {
 }
 
 #cta {
-  position: fixed;
-  left: 50%;
-  bottom: calc(max(18px, env(safe-area-inset-bottom)) + 66px);
-  transform: translateX(-50%);
   display: flex;
   gap: 10px;
-  width: max-content;
-  max-width: calc(100vw - 32px);
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -253,7 +346,7 @@ button {
 
 #rotate-tip {
   position: fixed;
-  top: 92px;
+  top: max(64px, calc(env(safe-area-inset-top) + 56px));
   left: 50%;
   transform: translateX(-50%);
   font-size: 13px;
@@ -448,15 +541,32 @@ button {
   }
 }
 
-@media (max-width: 640px) {
+/* Phones (upright or sideways): steps move from the top into the bottom dock */
+@media (max-width: 640px), (max-height: 520px) {
   .brand {
-    font-size: 15px;
+    font-size: 14px;
   }
-  #steps li {
-    font-size: 11px;
-    padding: 3px 8px;
+  .brand span {
+    display: none;
+  }
+  #steps {
+    display: none;
+  }
+  #progress-wrap {
+    display: block;
+  }
+  .hud-right button {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
   }
   #bubble {
+    font-size: 15px;
+    padding: 9px 16px;
+  }
+  #cta button,
+  #cta .secondary {
+    padding: 10px 18px;
     font-size: 15px;
   }
 }

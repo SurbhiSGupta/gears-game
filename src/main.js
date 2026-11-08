@@ -333,8 +333,13 @@ function angleAround(x, y, center) {
 
 function overview() {
   const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const dist = Math.min(4, Math.max(0.48 / t, 1.0 / (t * camera.aspect)));
-  return { target: V(0.27, 0.27, 0.1), dist, az: 0.12, pol: 1.15 };
+  // Short sideways phone screens get extra headroom so the seat and handlebars stay in view
+  const halfH = camera.aspect > 1.7 ? 0.58 : 0.5;
+  // Upright phones frame the bike with the toolbox peeking in at the edge
+  const upright = camera.aspect < 0.8;
+  const halfW = upright ? 0.78 : 1.0;
+  const dist = Math.min(5, Math.max(halfH / t, halfW / (t * camera.aspect)));
+  return { target: V(upright ? 0.2 : 0.27, 0.3, 0.1), dist, az: 0.12, pol: 1.15 };
 }
 
 function toolboxView() {
@@ -369,9 +374,14 @@ const currentStep = () => level.steps.find((s) => !stepDone[s.id]());
 let shownStep = null;
 function refreshSteps() {
   const now = currentStep();
-  $('steps').innerHTML = level.steps
-    .map((s) => `<li class="${stepDone[s.id]() ? 'done' : s === now ? 'now' : ''}">${s.label}</li>`)
-    .join('');
+  const state = (s) => (stepDone[s.id]() ? 'done' : s === now ? 'now' : '');
+  const items = level.steps.map((s) => `<li class="${state(s)}">${s.label}</li>`).join('');
+  $('steps').innerHTML = items;
+  $('steps-list').innerHTML = items;
+  $('progress-dots').innerHTML = level.steps.map((s) => `<i class="${state(s)}"></i>`).join('');
+  $('progress-label').textContent = now
+    ? `${level.steps.indexOf(now) + 1}/${level.steps.length} · ${now.label}`
+    : 'All done!';
   if (now && now !== shownStep && phase !== 'celebrate') {
     shownStep = now;
     say(now.say);
@@ -1327,9 +1337,22 @@ canvas.addEventListener(
 );
 
 // ---------- Buttons and the tuning panel ----------
+let tipDone = false;
 function begin() {
   unlockAudio();
   $('start').hidden = true;
+  // Phones: go full screen and prefer sideways, so the browser bar doesn't eat the game.
+  // Browsers that can't (like iPhone Safari) just carry on as normal.
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    const el = document.documentElement;
+    el.requestFullscreen?.()
+      .then(() => screen.orientation?.lock?.('landscape'))
+      .catch(() => {});
+  }
+  setTimeout(() => {
+    tipDone = true;
+    $('rotate-tip').hidden = true;
+  }, 6000);
   phase = 'closed';
   renderLives();
   refreshSteps();
@@ -1370,6 +1393,15 @@ $('btn-scene').onclick = () =>
     ['Keep playing', () => ($('modal').hidden = true)],
   );
 $('btn-how').onclick = () => howItWorks();
+
+// Phones: tap the progress dots to see every step, and it tucks away again by itself
+let listTimer = 0;
+$('progress').onclick = () => {
+  const list = $('steps-list');
+  list.hidden = !list.hidden;
+  clearTimeout(listTimer);
+  if (!list.hidden) listTimer = setTimeout(() => (list.hidden = true), 4000);
+};
 $('btn-tune').onclick = () => ($('tune').hidden = !$('tune').hidden);
 
 function buildTunePanel() {
@@ -1443,8 +1475,8 @@ function resize() {
   composer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  $('rotate-tip').hidden = !(h > w * 1.1);
-  if (phase === 'build' || phase === 'intro' || phase === 'done') rig.set(overview());
+  $('rotate-tip').hidden = tipDone || !(h > w * 1.1);
+  if (['intro', 'closed', 'build', 'done'].includes(phase)) rig.set(overview());
 }
 window.addEventListener('resize', resize);
 resize();
