@@ -231,6 +231,13 @@ const recipes = {
     for (const f of [1047, 1319, 1568]) tone({ freq: f, dur: 1.1, gain: 0.07, type: 'triangle', at: 0.84, attack: 0.02 });
     buzz(60);
   },
+  woof() {
+    // Two quick happy barks
+    for (const at of [0, 0.16]) {
+      tone({ freq: 520, to: 240, dur: 0.11, gain: 0.22, type: 'square', at });
+      noiseHit({ freq: 900, q: 1.5, dur: 0.06, gain: 0.18, at });
+    }
+  },
   whoosh() {
     noiseHit({ freq: 700, q: 0.7, dur: 0.6, gain: 0.18 });
   },

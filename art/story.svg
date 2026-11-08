@@ -1,0 +1,379 @@
+<svg id="story-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 900" preserveAspectRatio="xMidYMid meet" font-family="Nunito, ui-rounded, sans-serif">
+  <!--
+    Bodai Gears storybook: the driveway outside the garage, late afternoon.
+    Open this file in Figma to restyle it. Keep the id="..." names on groups:
+    the game uses them to animate the story. Colors are the daytime look;
+    dark mode recolors the st-* classes from style.css.
+  -->
+  <defs>
+    <linearGradient id="st-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" class="st-sky1" stop-color="#6fb8e0"/>
+      <stop offset="0.55" class="st-sky2" stop-color="#bfe1ee"/>
+      <stop offset="1" class="st-sky3" stop-color="#fbe5b2"/>
+    </linearGradient>
+    <radialGradient id="st-sunglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" class="st-sun1" stop-color="#fff7d9" stop-opacity="1"/>
+      <stop offset="0.25" class="st-sun2" stop-color="#ffe7a6" stop-opacity="0.7"/>
+      <stop offset="1" class="st-sun2" stop-color="#ffe7a6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="st-lawn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" class="st-lawn1" stop-color="#a9d27a"/>
+      <stop offset="1" class="st-lawn2" stop-color="#5f9a4a"/>
+    </linearGradient>
+    <linearGradient id="st-drive" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" class="st-drive1" stop-color="#e6dfd2"/>
+      <stop offset="1" class="st-drive2" stop-color="#cbbfa9"/>
+    </linearGradient>
+    <linearGradient id="st-pathgrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" class="st-path1" stop-color="#e9d2a2"/>
+      <stop offset="1" class="st-path2" stop-color="#f3e3bd"/>
+    </linearGradient>
+    <linearGradient id="st-inside" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" class="st-in1" stop-color="#4b413a"/>
+      <stop offset="1" class="st-in2" stop-color="#2c2622"/>
+    </linearGradient>
+    <linearGradient id="st-trunkgrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8a5a3c"/>
+      <stop offset="0.45" stop-color="#b07a52"/>
+      <stop offset="1" stop-color="#6a4330"/>
+    </linearGradient>
+    <radialGradient id="st-glow">
+      <stop offset="0" stop-color="#ffd27a" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffd27a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ===== The world: sky, hills, garage, driveway, tree, fence ===== -->
+  <g id="st-room">
+    <rect x="-900" y="-900" width="2600" height="1390" fill="url(#st-sky)"/>
+    <circle class="st-sun" cx="150" cy="210" r="330" fill="url(#st-sunglow)"/>
+    <g class="st-cloud" fill="#ffffff" opacity="0.9">
+      <path d="M380 150 a34 34 0 0 1 60 -18 a40 40 0 0 1 72 6 a28 28 0 0 1 30 38 h-170 a26 26 0 0 1 8 -26 Z"/>
+      <path d="M-60 90 a30 30 0 0 1 52 -14 a36 36 0 0 1 64 6 a24 24 0 0 1 24 30 h-150 a22 22 0 0 1 10 -22 Z"/>
+    </g>
+    <path class="st-hill1" d="M-900 470 Q-500 400 -100 446 Q200 470 420 420 Q640 380 900 440 Q1300 490 1700 450 V560 H-900 Z" fill="#c3d9ad"/>
+    <path class="st-treeline" d="M-900 480 q40 -30 80 0 q30 -26 60 -2 q40 -36 80 2 q30 -20 60 0 q40 -30 90 4 q30 -24 60 -2 q40 -32 80 2 q30 -22 70 0 q40 -36 90 2 q40 -26 80 -2 q40 -30 80 4 q30 -22 70 0 q40 -34 90 2 q30 -24 70 0 q40 -30 90 4 q30 -20 70 -2 q40 -30 80 2 q40 -26 80 0 q40 -34 90 2 q30 -22 70 0 q40 -30 90 2 q40 -26 80 0 V560 H-900 Z" fill="#9dc183" opacity="0.9"/>
+    <path class="st-hill2" d="M-900 520 Q-400 480 0 510 Q300 530 560 496 Q820 466 1100 506 Q1400 540 1700 520 V600 H-900 Z" fill="#8fbf72"/>
+    <rect x="-900" y="520" width="2600" height="1300" fill="url(#st-lawn)"/>
+
+    <!-- Fence on the right -->
+    <g class="st-fence" stroke-linecap="round">
+      <path d="M470 560 L1100 610 M470 586 L1100 640" stroke="#8a5d3d" stroke-width="7"/>
+      <path d="M470 557 L1100 607" stroke="#b58758" stroke-width="2"/>
+      <path d="M500 548 V598 M580 554 V606 M660 560 V614 M740 566 V622 M820 572 V630 M900 578 V638" stroke="#7a5034" stroke-width="10"/>
+      <path d="M497 548 V596 M577 554 V604 M657 560 V612 M737 566 V620" stroke="#b58758" stroke-width="2"/>
+    </g>
+    <g fill="#f6d36b"><circle cx="530" cy="608" r="4"/><circle cx="548" cy="616" r="3"/><circle cx="700" cy="628" r="4"/><circle cx="712" cy="638" r="3"/></g>
+    <g fill="#ef8fa8"><circle cx="560" cy="612" r="3.5"/><circle cx="690" cy="640" r="3"/></g>
+
+    <!-- The garage -->
+    <path class="st-roof" d="M-110 352 L120 262 L360 352 Z" fill="#5e6a78"/>
+    <path class="st-roof-edge" d="M-110 352 L120 262 L360 352" fill="none" stroke="#454f5b" stroke-width="10" stroke-linejoin="round"/>
+    <rect class="st-wall" x="-90" y="352" width="430" height="250" fill="#efe2cb"/>
+    <path d="M-90 380 H340 M-90 410 H340 M-90 440 H340 M-90 470 H340 M-90 500 H340 M-90 530 H340 M-90 560 H340" stroke="#e1d1b6" stroke-width="2"/>
+    <rect x="300" y="352" width="40" height="250" fill="#000" opacity="0.06"/>
+    <rect class="st-frame" x="6" y="404" width="262" height="198" fill="#d9c6a6"/>
+    <rect x="16" y="414" width="242" height="188" fill="url(#st-inside)"/>
+    <g class="st-door">
+      <rect x="16" y="414" width="242" height="30" fill="#e6d8c0"/>
+      <path d="M16 424 H258 M16 434 H258" stroke="#cdbb9d" stroke-width="2"/>
+    </g>
+    <g opacity="0.35" fill="#000">
+      <rect x="40" y="480" width="70" height="6"/><rect x="48" y="456" width="14" height="24"/><rect x="70" y="462" width="12" height="18"/>
+      <circle cx="210" cy="500" r="26" fill="none" stroke="#000" stroke-width="7"/>
+    </g>
+    <rect x="292" y="380" width="14" height="22" rx="4" fill="#3a3f48"/>
+    <circle class="st-lampglow" cx="299" cy="396" r="150" fill="url(#st-glow)" opacity="0"/>
+    <circle class="st-bulb" cx="299" cy="398" r="5" fill="#fff3c4"/>
+
+    <!-- Driveway and the path she rides off on -->
+    <path d="M10 600 L264 600 L1066 1800 L-1210 1800 Z" fill="url(#st-drive)"/>
+    <path d="M137 600 L60 1800 M38 760 L414 760 M-60 1000 L530 1000" stroke="#c2b59d" stroke-width="2.5" opacity="0.8"/>
+    <path class="st-path" d="M380 820 C 520 760 640 700 820 680 C 980 664 1200 660 1500 650 L1500 720 C 1200 730 1000 740 860 760 C 700 784 600 840 560 920 Z" fill="url(#st-pathgrad)"/>
+
+    <!-- The big tree that frames the scene -->
+    <g transform="translate(110 0)">
+    <path d="M622 920 C 640 760 668 600 650 470 C 640 400 660 330 700 280 L760 300 C 728 350 716 420 726 480 C 742 600 724 760 742 920 Z" fill="url(#st-trunkgrad)"/>
+    <path d="M684 440 C 690 520 680 620 690 720 M708 380 C 700 420 704 470 712 520 M668 760 C 664 820 668 880 672 920" stroke="#6a4330" stroke-width="3" fill="none" opacity="0.6"/>
+    <path d="M700 300 C 660 250 610 230 560 240 M730 290 C 760 230 820 200 880 210" stroke="#7a4e34" stroke-width="16" fill="none" stroke-linecap="round"/>
+    </g>
+    <g class="st-leaf1" fill="#3f7a46"><circle cx="670" cy="300" r="70"/><circle cx="750" cy="250" r="90"/><circle cx="850" cy="220" r="100"/><circle cx="970" cy="240" r="110"/><circle cx="1090" cy="280" r="120"/><circle cx="710" cy="360" r="60"/><circle cx="810" cy="340" r="70"/><circle cx="930" cy="350" r="80"/><circle cx="1050" cy="380" r="90"/><circle cx="1190" cy="330" r="110"/><circle cx="770" cy="160" r="80"/><circle cx="910" cy="120" r="110"/><circle cx="1060" cy="140" r="120"/><circle cx="1210" cy="180" r="130"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="1070" cy="350" r="62"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="1061" cy="340" r="55"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="1073" cy="354" r="55"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="730" cy="340" r="44"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="724" cy="333" r="39"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="732" cy="343" r="39"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="950" cy="330" r="58"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="942" cy="321" r="51"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="953" cy="334" r="51"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="830" cy="320" r="52"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="823" cy="312" r="46"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="833" cy="324" r="46"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="680" cy="285" r="52"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="673" cy="277" r="46"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="683" cy="289" r="46"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="1100" cy="250" r="90"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="1087" cy="236" r="79"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="1104" cy="256" r="79"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="760" cy="232" r="70"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="750" cy="221" r="62"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="764" cy="237" r="62"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="980" cy="215" r="85"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="968" cy="201" r="75"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="984" cy="221" r="75"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="860" cy="200" r="80"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="849" cy="187" r="70"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="864" cy="206" r="70"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="790" cy="140" r="62"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="781" cy="130" r="55"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="793" cy="144" r="55"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="1070" cy="120" r="95"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="1057" cy="105" r="84"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="1075" cy="127" r="84"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="920" cy="100" r="90"/></g>
+    <g class="st-leaf3" fill="#a7cb5a"><circle cx="907" cy="86" r="79"/></g>
+    <g class="st-leaf2" fill="#5f9c4f"><circle cx="924" cy="106" r="79"/></g>
+
+    <!-- Dappled tree shade on the grass -->
+    <ellipse cx="870" cy="928" rx="210" ry="34" fill="#2f5a2c" opacity="0.18"/>
+
+    <!-- Foreground grass -->
+    <g class="st-grass" fill="#4f8d40"><path d="M-120 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M-74 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M-28 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M18 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M64 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M110 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M156 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M202 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M248 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M294 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M340 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M386 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M432 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M478 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M524 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M570 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M616 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M662 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M708 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M754 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M800 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M846 900 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M892 906 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/><path d="M938 912 q6 -26 10 -34 q2 14 4 30 q6 -18 14 -24 q-4 16 -2 28 Z"/></g>
+    <path d="M-40 880 q30 -34 70 -20 q22 -24 52 -8 q10 20 -8 40 h-110 Z" fill="#8f8a84"/>
+    <path d="M-30 872 q24 -24 56 -14" stroke="#b9b4ad" stroke-width="5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Long afternoon shadows -->
+  <g fill="#2b3320" opacity="0.16">
+    <ellipse cx="440" cy="832" rx="190" ry="11"/>
+    <ellipse cx="236" cy="846" rx="130" ry="10"/>
+  </g>
+
+  <!-- ===== Mom, kneeling and fixing the bike ===== -->
+  <g id="st-mom-kneel" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M214 616 L228 680 L262 722" fill="none" stroke="#85543a" stroke-width="13"/>
+    <path d="M214 616 L219 640" stroke="#e6dccd" stroke-width="18"/>
+    <path d="M200 746 L176 836 L122 838" fill="none" stroke="#b87e1c" stroke-width="34" transform="translate(0 4)"/>
+    <path d="M200 742 L176 836 L122 838" fill="none" stroke="#d99a2b" stroke-width="32"/>
+    <path d="M84 848 Q86 828 112 828 L122 830 L122 848 Z" fill="#3a3346"/>
+    <path d="M210 744 L272 732 L268 830" fill="none" stroke="#b87e1c" stroke-width="34" transform="translate(2 3)"/>
+    <path d="M210 742 L272 730 L268 830" fill="none" stroke="#d99a2b" stroke-width="32"/>
+    <path d="M250 838 Q282 826 304 840 Z" fill="#3a3346"/>
+    <path d="M190 754 L232 754 L254 612 L208 604 Z" fill="#f4ece0"/>
+    <path d="M232 754 L254 612 L246 610 L224 754 Z" fill="#ddd2c1"/>
+    <path d="M187 758 L235 758 L245 672 L241 642 L214 638 L206 672 Z" fill="#d99a2b"/>
+    <path d="M226 758 L235 758 L245 672 L241 642 L236 642 Z" fill="#b87e1c"/>
+    <rect x="218" y="652" width="18" height="16" rx="3" fill="#c2861f"/>
+    <path d="M215 640 L212 610 M240 642 L248 614" stroke="#d99a2b" stroke-width="6"/>
+    <path d="M238 602 L242 588" stroke="#a0694a" stroke-width="16"/>
+    <path d="M246 618 L254 642" stroke="#f4ece0" stroke-width="20"/>
+    <path d="M252 636 L270 688 L292 744" fill="none" stroke="#a0694a" stroke-width="14"/>
+    <circle cx="295" cy="748" r="8" fill="#a0694a"/>
+    <path d="M296 750 L318 762" stroke="#b9c0ca" stroke-width="6"/>
+    <circle cx="322" cy="764" r="6" fill="none" stroke="#b9c0ca" stroke-width="4"/>
+    <ellipse cx="248" cy="566" rx="24" ry="28" fill="#a0694a"/>
+    <ellipse cx="238" cy="570" rx="5" ry="7" fill="#85543a"/>
+    <circle cx="224" cy="552" r="15" fill="#2a1b18"/>
+    <path d="M226 562 Q226 530 256 534 Q276 540 273 560 Q262 546 247 548 Q236 554 234 578 Z" fill="#2a1b18"/>
+    <path d="M230 546 Q252 526 274 546 L272 553 Q251 536 232 554 Z" fill="#e0574a"/>
+    <path d="M220 544 q4 -6 10 -6" stroke="#4a3029" stroke-width="3" fill="none"/>
+    <ellipse cx="262" cy="567" rx="3" ry="2.2" fill="#2a1b18"/>
+    <path d="M256 557 L268 555" stroke="#2a1b18" stroke-width="2.5"/>
+    <path d="M271 566 L274 574 L270 575" fill="none" stroke="#85543a" stroke-width="2"/>
+    <path d="M261 583 Q266 586 271 582" fill="none" stroke="#6b3a2a" stroke-width="2.2"/>
+  </g>
+
+  <!-- ===== Mom, standing and waving (shown when the bike rides off) ===== -->
+  <g id="st-mom-stand" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="250" cy="846" rx="80" ry="9" fill="#2b3320" opacity="0.16"/>
+    <path d="M222 650 L230 830" stroke="#b87e1c" stroke-width="34"/>
+    <path d="M196 650 L192 830 M222 650 L230 830" fill="none" stroke="#d99a2b" stroke-width="30"/>
+    <ellipse cx="184" cy="840" rx="21" ry="9" fill="#3a3346"/>
+    <ellipse cx="238" cy="840" rx="21" ry="9" fill="#3a3346"/>
+    <path d="M176 510 L170 535" stroke="#f4ece0" stroke-width="20"/>
+    <path d="M170 532 L164 640" stroke="#a0694a" stroke-width="14"/>
+    <circle cx="164" cy="646" r="8" fill="#a0694a"/>
+    <path d="M180 664 L238 664 L246 506 L172 506 Z" fill="#f4ece0"/>
+    <path d="M226 664 L238 664 L246 506 L236 506 Z" fill="#ddd2c1"/>
+    <path d="M178 668 L240 668 L242 570 L232 560 L186 560 L176 570 Z" fill="#d99a2b"/>
+    <path d="M226 668 L240 668 L242 570 L232 560 L228 560 Z" fill="#b87e1c"/>
+    <rect x="198" y="578" width="22" height="18" rx="3" fill="#c2861f"/>
+    <path d="M186 562 L182 508 M230 562 L236 508" stroke="#d99a2b" stroke-width="7"/>
+    <g id="st-mom-wave">
+      <path d="M240 512 L254 498" stroke="#f4ece0" stroke-width="20"/>
+      <path d="M252 500 L272 452 L282 404" fill="none" stroke="#a0694a" stroke-width="14"/>
+      <circle cx="283" cy="396" r="9" fill="#a0694a"/>
+    </g>
+    <path d="M208 504 L208 484" stroke="#a0694a" stroke-width="18"/>
+    <ellipse cx="208" cy="458" rx="24" ry="28" fill="#a0694a"/>
+    <circle cx="185" cy="440" r="15" fill="#2a1b18"/>
+    <path d="M184 458 Q184 424 210 424 Q236 424 233 452 Q226 436 208 436 Q192 438 188 462 Z" fill="#2a1b18"/>
+    <path d="M184 444 Q208 420 234 442 L232 450 Q208 430 186 452 Z" fill="#e0574a"/>
+    <ellipse cx="199" cy="459" rx="3" ry="3.4" fill="#2a1b18"/>
+    <ellipse cx="217" cy="459" rx="3" ry="3.4" fill="#2a1b18"/>
+    <path d="M194 449 L203 448 M213 448 L222 449" stroke="#2a1b18" stroke-width="2.4"/>
+    <path d="M208 463 L206 471 L210 472" fill="none" stroke="#85543a" stroke-width="2"/>
+    <path d="M198 478 Q208 487 218 478" fill="none" stroke="#6b3a2a" stroke-width="2.6"/>
+  </g>
+
+  <!-- ===== The bike, and the daughter once she hops on (they ride off together) ===== -->
+  <g id="st-ride">
+    <g id="st-bike" stroke-linecap="round" stroke-linejoin="round" style="cursor: pointer">
+      <rect x="216" y="600" width="370" height="240" fill="#fff" opacity="0"/>
+      <path id="st-kick" d="M372 772 L350 826" stroke="#8a8f99" stroke-width="5"/>
+      <g class="st-wheel">
+        <circle cx="300" cy="760" r="62" fill="none" stroke="#26262c" stroke-width="12"/>
+        <circle cx="300" cy="760" r="54" fill="none" stroke="#ec4a92" stroke-width="5"/>
+        <path d="M300 706 V814 M246 760 H354 M262 722 L338 798 M338 722 L262 798" stroke="#c7ccd4" stroke-width="2"/>
+        <circle cx="300" cy="760" r="7" fill="#c7ccd4"/>
+      </g>
+      <g class="st-wheel">
+        <circle cx="500" cy="760" r="62" fill="none" stroke="#26262c" stroke-width="12"/>
+        <circle cx="500" cy="760" r="54" fill="none" stroke="#ec4a92" stroke-width="5"/>
+        <path d="M500 706 V814 M446 760 H554 M462 722 L538 798 M538 722 L462 798" stroke="#c7ccd4" stroke-width="2"/>
+        <circle cx="500" cy="760" r="7" fill="#c7ccd4"/>
+      </g>
+      <g fill="none" stroke="#17c3b2" stroke-width="11">
+        <path d="M300 760 L380 768 L352 662"/>
+        <path d="M300 760 L358 684"/>
+        <path d="M357 686 L472 668"/>
+        <path d="M380 768 L478 690"/>
+        <path d="M470 652 L480 692" stroke-width="14"/>
+        <path d="M480 692 L500 760" stroke-width="9"/>
+      </g>
+      <path d="M352 662 L348 645 M470 652 L474 632 Q462 618 446 622" fill="none" stroke="#c7ccd4" stroke-width="6"/>
+      <path d="M446 622 L432 626" stroke="#26262c" stroke-width="10"/>
+      <ellipse cx="342" cy="641" rx="27" ry="8" fill="#26262c"/>
+
+      <!-- The parts you fit in the workbench (shown once it's built) -->
+      <g id="st-parts">
+        <path d="M300 748 L380 742 A26 26 0 0 1 380 794 L300 772 A12 12 0 0 1 300 748 Z" fill="none" stroke="#5b606b" stroke-width="4" stroke-dasharray="4 3"/>
+        <circle cx="300" cy="760" r="12" fill="#cfd4dc" stroke="#8a8f99" stroke-width="3" stroke-dasharray="3 2"/>
+        <circle cx="380" cy="768" r="24" fill="#cfd4dc" stroke="#8a8f99" stroke-width="3" stroke-dasharray="3 3"/>
+        <circle cx="380" cy="768" r="8" fill="#8a8f99"/>
+        <path d="M300 741 L384 735 A34 34 0 0 1 413 752 L404 758 A25 25 0 0 0 382 746 L302 752 Z" fill="#17c3b2"/>
+        <g id="st-crank">
+          <path d="M380 768 L398 806" stroke="#c7ccd4" stroke-width="6"/>
+          <rect x="386" y="803" width="26" height="7" rx="3" fill="#26262c"/>
+        </g>
+      </g>
+    </g>
+
+
+    <!-- The daughter riding -->
+    <g id="st-girl-ride" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M348 636 L402 684 L400 792" fill="none" stroke="#a0694a" stroke-width="15"/>
+      <path d="M346 634 L374 662" stroke="#4a6fa5" stroke-width="24"/>
+      <ellipse cx="406" cy="800" rx="15" ry="7" fill="#fff" stroke="#3a3346" stroke-width="2"/>
+      <path d="M334 642 L364 642 L400 556 L372 544 Z" fill="#6c5ce7"/>
+      <path d="M352 642 L364 642 L400 556 L390 552 Z" fill="#5a4bd0"/>
+      <path d="M386 556 L398 572" stroke="#6c5ce7" stroke-width="17"/>
+      <path d="M396 568 L420 598 L446 622" fill="none" stroke="#a0694a" stroke-width="11"/>
+      <path d="M388 546 L394 532" stroke="#a0694a" stroke-width="13"/>
+      <path d="M384 510 Q362 512 358 536 Q372 522 388 520 Z" fill="#2a1b18"/>
+      <ellipse cx="404" cy="514" rx="21" ry="24" fill="#a0694a"/>
+      <path d="M380 512 Q390 476 424 486 Q434 496 429 510 Z" fill="#17c3b2"/>
+      <path d="M392 490 L398 506 M406 484 L410 504" stroke="#0f9a8c" stroke-width="2.5"/>
+      <path d="M388 514 L398 532" stroke="#0f9a8c" stroke-width="2"/>
+      <ellipse cx="415" cy="516" rx="2.6" ry="3" fill="#2a1b18"/>
+      <path d="M410 507 L419 507" stroke="#2a1b18" stroke-width="2.2"/>
+      <path d="M411 528 Q416 531 421 527" fill="none" stroke="#6b3a2a" stroke-width="2.2"/>
+    </g>
+  </g>
+
+  <!-- ===== The daughter, waiting with her helmet ===== -->
+  <g id="st-girl-stand" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="690" cy="842" rx="70" ry="8" fill="#2b3320" opacity="0.16"/>
+    <path d="M636 716 L634 822 M654 716 L658 822" fill="none" stroke="#a0694a" stroke-width="15"/>
+    <path d="M634 812 L634 822 M658 812 L658 822" stroke="#fff" stroke-width="15"/>
+    <ellipse cx="630" cy="832" rx="16" ry="8" fill="#fff" stroke="#3a3346" stroke-width="2"/>
+    <ellipse cx="663" cy="832" rx="16" ry="8" fill="#fff" stroke="#3a3346" stroke-width="2"/>
+    <path d="M618 690 L672 690 L674 724 L649 727 L645 712 L641 727 L616 724 Z" fill="#4a6fa5"/>
+    <path d="M620 598 L610 622 M670 598 L680 622" stroke="#6c5ce7" stroke-width="18"/>
+    <path d="M610 618 L604 690 M680 618 L684 690" stroke="#a0694a" stroke-width="11"/>
+    <circle cx="604" cy="696" r="7" fill="#a0694a"/>
+    <circle cx="684" cy="696" r="7" fill="#a0694a"/>
+    <path d="M618 594 L672 594 L676 700 L614 700 Z" fill="#6c5ce7"/>
+    <path d="M660 594 L672 594 L676 700 L664 700 Z" fill="#5a4bd0"/>
+    <path d="M582 718 Q606 680 632 716 Z" fill="#17c3b2"/>
+    <path d="M598 694 L602 712 M612 688 L614 710" stroke="#0f9a8c" stroke-width="2.5"/>
+    <path d="M645 590 L645 574" stroke="#a0694a" stroke-width="14"/>
+    <path d="M662 528 Q694 518 692 556 Q684 540 668 538 Z" fill="#2a1b18"/>
+    <ellipse cx="645" cy="552" rx="22" ry="25" fill="#a0694a"/>
+    <path d="M623 552 Q622 524 646 522 Q670 522 668 548 Q660 534 645 534 Q630 536 627 556 Z" fill="#2a1b18"/>
+    <circle cx="664" cy="528" r="3.5" fill="#17c3b2"/>
+    <ellipse cx="637" cy="554" rx="2.6" ry="3" fill="#2a1b18"/>
+    <ellipse cx="653" cy="554" rx="2.6" ry="3" fill="#2a1b18"/>
+    <path d="M633 545 L641 544 M649 544 L657 545" stroke="#2a1b18" stroke-width="2.2"/>
+    <path d="M637 566 Q645 572 653 566" fill="none" stroke="#6b3a2a" stroke-width="2.2"/>
+  </g>
+
+  <!-- ===== Ninja: napping in front of the bike, then racing after it ===== -->
+  <g transform="translate(360 6)">
+  <!-- ===== Ninja the dog (Pomeranian + Spitz), napping ===== -->
+  <g id="st-dog-lounge" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="130" cy="868" rx="64" ry="6" fill="#000" opacity="0.1"/>
+    <g fill="#fffdf8" stroke="#dccfb8" stroke-width="1.8">
+      <ellipse cx="96" cy="862" rx="15" ry="7"/>
+      <ellipse cx="122" cy="848" rx="44" ry="20"/>
+      <circle cx="94" cy="836" r="12"/>
+      <circle cx="112" cy="830" r="13"/>
+      <circle cx="132" cy="830" r="13"/>
+      <circle cx="84" cy="820" r="13"/>
+      <circle cx="97" cy="809" r="11"/>
+      <circle cx="157" cy="838" r="20"/>
+      <ellipse cx="182" cy="862" rx="15" ry="6"/>
+      <path d="M160 828 L163 806 L173 824 Z"/>
+      <path d="M171 824 L179 804 L185 826 Z"/>
+      <circle cx="173" cy="838" r="15"/>
+      <path d="M182 832 Q196 838 196 845 Q188 850 180 848 Z"/>
+    </g>
+    <ellipse cx="118" cy="835" rx="11" ry="5" fill="#f1dfbd" opacity="0.85"/>
+    <ellipse cx="90" cy="812" rx="6" ry="4" fill="#f1dfbd" opacity="0.7"/>
+    <path d="M163 822 L165 811 L170 821 Z M174 821 L178 810 L181 822 Z" fill="#f4cdb8"/>
+    <circle cx="195" cy="844" r="3.2" fill="#2b2a45"/>
+    <path d="M168 836 Q172 839 176 836" fill="none" stroke="#2b2a45" stroke-width="2"/>
+    <path d="M150 852 Q158 860 168 856" fill="none" stroke="#17c3b2" stroke-width="4"/>
+  </g>
+  <text class="st-zzz" x="196" y="806" font-size="18" font-weight="900" fill="#8a7f99">z z</text>
+
+  </g>
+  <g transform="translate(360 6)">
+  <!-- ===== Ninja, running after the bike ===== -->
+  <g id="st-dog-run" stroke-linecap="round" stroke-linejoin="round">
+    <g id="st-dog-bounce">
+      <path class="st-leg-a" d="M122 842 L114 864" stroke="#ece2cf" stroke-width="8"/>
+      <path class="st-leg-b" d="M132 842 L138 864" stroke="#ece2cf" stroke-width="8"/>
+      <path class="st-leg-b" d="M158 842 L150 864" stroke="#ece2cf" stroke-width="8"/>
+      <path class="st-leg-a" d="M168 842 L176 864" stroke="#ece2cf" stroke-width="8"/>
+      <g fill="#fffdf8" stroke="#dccfb8" stroke-width="1.8">
+        <ellipse cx="142" cy="830" rx="40" ry="18"/>
+        <circle cx="122" cy="818" r="12"/>
+        <circle cx="140" cy="814" r="12"/>
+        <circle cx="106" cy="806" r="13"/>
+        <circle cx="118" cy="796" r="10"/>
+        <circle cx="176" cy="820" r="19"/>
+        <path d="M180 800 L183 777 L192 797 Z"/>
+        <path d="M191 797 L198 776 L204 799 Z"/>
+        <circle cx="191" cy="809" r="15"/>
+        <path d="M200 803 Q216 810 216 817 Q208 822 199 820 Z"/>
+      </g>
+      <ellipse cx="140" cy="822" rx="10" ry="5" fill="#f1dfbd" opacity="0.85"/>
+      <path d="M183 795 L184 783 L189 794 Z M193 794 L197 782 L200 796 Z" fill="#f4cdb8"/>
+      <circle cx="215" cy="815" r="3.2" fill="#2b2a45"/>
+      <circle cx="195" cy="806" r="2.6" fill="#2b2a45"/>
+      <path d="M205 821 Q208 830 214 824" fill="#ee6b8b"/>
+      <path d="M168 830 Q176 838 186 833" fill="none" stroke="#17c3b2" stroke-width="4"/>
+      <g id="st-woof">
+        <rect x="200" y="742" width="78" height="32" rx="15" fill="#fff" stroke="#2b2a45" stroke-width="2.5"/>
+        <text x="239" y="764" font-size="17" font-weight="900" text-anchor="middle" fill="#2b2a45">Woof!</text>
+      </g>
+    </g>
+  </g>
+
+  </g>
+
+  <!-- Pulsing ring that says "tap the bike" -->
+  <circle id="st-tap" cx="400" cy="740" r="150" fill="none" stroke="#ffcf4a" stroke-width="6"/>
+</svg>

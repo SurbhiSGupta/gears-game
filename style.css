@@ -618,3 +618,292 @@ button {
     font-size: 15px;
   }
 }
+
+/* ---------- 🎓 learn button and cards ---------- */
+#bubble .learn {
+  pointer-events: auto;
+  margin-left: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--card);
+  box-shadow: 0 0 0 2px var(--ink);
+  font-size: 17px;
+  line-height: 32px;
+  vertical-align: middle;
+}
+
+#learn {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--veil);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+#learn h2 {
+  margin: 4px 0 8px;
+  font-size: 21px;
+  font-weight: 900;
+}
+
+#learn-art svg {
+  width: min(240px, 70vw);
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+#learn-ok {
+  padding: 12px 24px;
+  border-radius: 16px;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 900;
+  font-size: 17px;
+  box-shadow: 0 5px 0 var(--teal-dark), var(--shadow);
+}
+
+/* ---------- Storybook garage (art/story.svg) ---------- */
+#story {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(to bottom, #bfe1ee 50%, #8fbf72 50%);
+}
+
+#story-art,
+#story-art svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+#story-art svg {
+  transition: transform 0.9s cubic-bezier(0.6, 0, 0.4, 1), opacity 0.9s;
+}
+
+#story.zoom svg {
+  transform: scale(2.8);
+  opacity: 0;
+}
+
+#story-caption {
+  position: absolute;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(520px, calc(100vw - 32px));
+  padding: 12px 20px;
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  font-weight: 800;
+  font-size: 17px;
+  text-align: center;
+  pointer-events: none;
+}
+
+/* While the story is showing, the workbench controls step aside */
+body.in-story .hud-top,
+body.in-story .hud-right,
+body.in-story #dock,
+body.in-story #hints,
+body.in-story .tag,
+body.in-story #callout {
+  visibility: hidden;
+}
+
+/* What shows when */
+#st-parts,
+#st-girl-ride,
+#st-mom-stand,
+#st-dog-run {
+  display: none;
+}
+#story:not(.before) #st-tap {
+  display: none;
+}
+#story.after #st-parts,
+#story.mounted #st-girl-ride,
+#story.cheer #st-mom-stand,
+#story.chase #st-dog-run {
+  display: inline;
+}
+#story.mounted #st-girl-stand,
+#story.mounted #st-kick,
+#story.cheer #st-mom-kneel,
+#story.chase #st-dog-lounge,
+#story.chase .st-zzz {
+  display: none;
+}
+
+/* Tap ring and the napping dog */
+#st-tap {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: st-pulse 1.6s ease-out infinite;
+  cursor: pointer;
+}
+.st-zzz {
+  animation: st-float 2.4s ease-in-out infinite;
+}
+
+/* The ride */
+#st-ride {
+  transition: transform 3.6s cubic-bezier(0.45, 0, 0.75, 0.6);
+}
+#story.riding #st-ride {
+  transform: translateX(1150px);
+}
+#story.riding .st-wheel {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: st-spin 0.45s linear infinite;
+}
+#st-crank {
+  transform-box: view-box;
+  transform-origin: 380px 768px;
+}
+#story.riding #st-crank {
+  animation: st-spin 0.9s linear infinite;
+}
+#st-mom-wave {
+  transform-box: view-box;
+  transform-origin: 240px 512px;
+}
+#story.cheer #st-mom-wave {
+  animation: st-wave 0.45s ease-in-out infinite alternate;
+}
+#st-dog-run {
+  transition: transform 3.8s cubic-bezier(0.45, 0, 0.75, 0.6) 0.5s;
+}
+#story.chase #st-dog-run {
+  transform: translateX(1200px);
+}
+#story.chase #st-dog-bounce {
+  animation: st-hop 0.28s ease-in-out infinite alternate;
+}
+.st-leg-a,
+.st-leg-b {
+  transform-box: fill-box;
+  transform-origin: top;
+}
+#story.chase .st-leg-a {
+  animation: st-leg 0.14s linear infinite alternate;
+}
+#story.chase .st-leg-b {
+  animation: st-leg 0.14s linear infinite alternate-reverse;
+}
+#st-woof {
+  transform-box: fill-box;
+  transform-origin: bottom left;
+  animation: st-pop 0.8s ease-out infinite;
+}
+
+@keyframes st-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes st-wave {
+  from {
+    transform: rotate(-14deg);
+  }
+  to {
+    transform: rotate(20deg);
+  }
+}
+@keyframes st-hop {
+  to {
+    transform: translateY(-12px);
+  }
+}
+@keyframes st-leg {
+  from {
+    transform: rotate(-28deg);
+  }
+  to {
+    transform: rotate(28deg);
+  }
+}
+@keyframes st-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  25% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes st-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+@keyframes st-float {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+/* Evening: dusk sky, porch light on, the tree and hills in blue shadow */
+:root[data-theme='dark'] #story {
+  background: linear-gradient(to bottom, #2b2550 50%, #2f4a35 50%);
+}
+:root[data-theme='dark'] .st-sky1 { stop-color: #241f4a; }
+:root[data-theme='dark'] .st-sky2 { stop-color: #5b4a8a; }
+:root[data-theme='dark'] .st-sky3 { stop-color: #f29a6e; }
+:root[data-theme='dark'] .st-sun1 { stop-color: #ffd9a0; }
+:root[data-theme='dark'] .st-sun2 { stop-color: #f2a06e; }
+:root[data-theme='dark'] .st-cloud { fill: #8a7aa8; opacity: 0.5; }
+:root[data-theme='dark'] .st-hill1 { fill: #5a6a86; }
+:root[data-theme='dark'] .st-treeline { fill: #3f5a5a; }
+:root[data-theme='dark'] .st-hill2 { fill: #3d5e48; }
+:root[data-theme='dark'] .st-lawn1 { stop-color: #3f6448; }
+:root[data-theme='dark'] .st-lawn2 { stop-color: #233a2a; }
+:root[data-theme='dark'] .st-drive1 { stop-color: #8a8090; }
+:root[data-theme='dark'] .st-drive2 { stop-color: #5e5664; }
+:root[data-theme='dark'] .st-path1 { stop-color: #9a8466; }
+:root[data-theme='dark'] .st-path2 { stop-color: #b29a76; }
+:root[data-theme='dark'] .st-wall { fill: #8f8597; }
+:root[data-theme='dark'] .st-roof { fill: #3a3f55; }
+:root[data-theme='dark'] .st-frame { fill: #6e6578; }
+:root[data-theme='dark'] .st-door rect { fill: #8a8090; }
+:root[data-theme='dark'] .st-in1 { stop-color: #7a5a3c; }
+:root[data-theme='dark'] .st-in2 { stop-color: #3a2a20; }
+:root[data-theme='dark'] .st-leaf1 { fill: #1f3d33; }
+:root[data-theme='dark'] .st-leaf2 { fill: #2c5242; }
+:root[data-theme='dark'] .st-leaf3 { fill: #5c7a4a; }
+:root[data-theme='dark'] .st-grass { fill: #1d3424; }
+:root[data-theme='dark'] .st-lampglow { opacity: 1; }
+:root[data-theme='dark'] .st-bulb { fill: #ffe9a0; }
+
+#story.reset svg,
+#story.reset #st-ride,
+#story.reset #st-dog-run {
+  transition: none;
+}
+
+@media (max-width: 640px), (max-height: 520px) {
+  #story-caption {
+    font-size: 15px;
+    padding: 9px 16px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}

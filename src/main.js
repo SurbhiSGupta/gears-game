@@ -14,6 +14,8 @@ import { tune, saveTune, resetTune, tuneSpec } from './tune.js';
 import { Hints } from './hints.js';
 import { Tweens, ease } from './tween.js';
 import { level } from './level1.js';
+import { showLearn } from './learn.js';
+import { Story } from './story.js';
 
 const $ = (id) => document.getElementById(id);
 const V = (x = 0, y = 0, z = 0) => new THREE.Vector3(x, y, z);
@@ -114,6 +116,9 @@ scene.add(stand);
 const frontR = Models.pitchRadius(level.frontTeeth);
 const rearR = Models.pitchRadius(level.rearTeeth);
 const RATIO = level.frontTeeth / level.rearTeeth;
+// Kid-friendly comparison: "twice as many", "three times as many"
+const timesWords = () =>
+  ({ 2: 'twice as many', 3: 'three times as many', 4: 'four times as many' })[RATIO] ?? `${RATIO} times as many`;
 const chainPath = new ChainPath(bike.A, rearR, bike.BB, frontR);
 
 const tb = Models.buildToolbox(M);
@@ -236,15 +241,18 @@ swapMat(crank.group, M.chrome, powerMats[1]);
 swapMat(cog.group, M.chrome, powerMats[3]);
 swapMat(bike.rearPivot, M.rim, powerMats[4]);
 
-// Bright stickers on the big gear and the back tire, so you can count them going around
+// Bright stickers on the big gear and the back tire, so you can count them going around.
+// They only show while pedaling and during the replay.
 const stickerMat = new THREE.MeshBasicMaterial({ color: 0xffcf4a });
 const stickerEdge = new THREE.MeshBasicMaterial({ color: 0x2b2a45 });
+const stickers = [];
 function sticker(parent, r, x, y, z) {
   const dot = new THREE.Mesh(new THREE.CircleGeometry(r, 24), stickerMat);
   const edge = new THREE.Mesh(new THREE.RingGeometry(r, r * 1.3, 24), stickerEdge);
   dot.position.set(x, y, z);
   edge.position.set(x, y, z - 0.0002);
   parent.add(dot, edge);
+  stickers.push(dot, edge);
 }
 sticker(crank.group, 0.0075, crank.rp * 0.56, 0, Models.Z_CHAIN + 0.0022);
 sticker(bike.rearPivot.children[0], 0.013, 0.228, 0, 0.0275);
@@ -399,9 +407,18 @@ function toolboxView() {
 let sayTimer = 0;
 let quietTimer = 0;
 const compact = window.matchMedia('(max-width: 640px), (max-height: 520px)');
-function say(text, mood = '', ms = 0) {
+// learn: an optional topic ('teeth', 'chain', 'twice') that adds a 🎓 button to the message
+function say(text, mood = '', ms = 0, learn = null) {
   const b = $('bubble');
   b.textContent = text;
+  if (learn) {
+    const btn = document.createElement('button');
+    btn.className = 'learn';
+    btn.textContent = '🎓';
+    btn.title = 'Learn more';
+    btn.onclick = () => showLearn(learn);
+    b.append(' ', btn);
+  }
   b.className = mood;
   b.hidden = false;
   clearTimeout(sayTimer);
@@ -719,15 +736,15 @@ function afterInstall(part) {
         chain.update();
         feel('chainOn');
         refreshSteps();
+        say('Chain on! Its links fit around the teeth of both gears.', 'yay', 6000, 'chain');
       },
     );
     return;
   }
   refreshSteps();
-  if (part.id === 'crankset') say(`Big gear on! It has ${level.frontTeeth} teeth.`, 'yay', 3200);
+  if (part.id === 'crankset') say(`Big gear on! It has ${level.frontTeeth} teeth.`, 'yay', 6000, 'teeth');
   if (part.id === 'rearCog') {
-    const fewer = RATIO === 2 ? 'half as many as' : 'fewer than';
-    say(`Little gear on! It has ${level.rearTeeth} teeth, ${fewer} the big gear.`, 'yay', 3800);
+    say(`Little gear on! It has ${level.rearTeeth} teeth. The big gear has ${timesWords()} teeth.`, 'yay', 6500, 'teeth');
   }
 }
 
@@ -953,6 +970,8 @@ function teach(dt, shine) {
     });
   }
   powerMats[4].emissiveIntensity = Math.max(powerMats[4].emissiveIntensity, shine);
+  const showStickers = phase === 'replay' || power > 0.05;
+  for (const s of stickers) s.visible = showStickers;
 
   // Live counters under the pedal and the back wheel
   const w = window.innerWidth;
@@ -972,7 +991,7 @@ function teach(dt, shine) {
   }
   if (!session.told && geared && session.pedal >= TAU && (phase === 'build' || phase === 'done')) {
     session.told = true;
-    say(`One pedal turn = ${RATIO} wheel turns! (${level.frontTeeth} ÷ ${level.rearTeeth} teeth = ${RATIO})`, 'yay', 4500);
+    say(`One pedal turn = ${RATIO} wheel turns! The big gear has ${timesWords()} teeth.`, 'yay', 6500, 'twice');
   }
 
   const c = $('callout');
@@ -1033,7 +1052,7 @@ async function howItWorks() {
   }
   replayFocus = -1;
   showCallout(
-    `${level.frontTeeth} ÷ ${level.rearTeeth} = ${RATIO}, so one pedal turn spins the wheel ${RATIO} times!`,
+    `The big gear has ${timesWords()} teeth, so one pedal turn spins the wheel ${RATIO} times!`,
     ANCHORS.middle,
   );
   feel('sparkle');
@@ -1044,7 +1063,7 @@ async function howItWorks() {
   await fadeBody(1);
   rig.set(overview());
   phase = 'done';
-  say('Ready to ride!', 'yay');
+  say('Ready to ride! Want to know why it spins twice?', 'yay', 0, 'twice');
   $('cta').hidden = false;
 }
 
@@ -1250,6 +1269,19 @@ async function celebrate() {
   sunburst.mesh.visible = false;
   glowing = false;
   phase = 'done';
+  // The first time on this device, "See how it works" plays by itself
+  let seen = false;
+  try {
+    seen = !!localStorage.getItem('gears-replay-seen');
+    localStorage.setItem('gears-replay-seen', '1');
+  } catch {
+    // Without storage it simply plays each time.
+  }
+  if (!seen) {
+    await tweens.wait(0.8);
+    howItWorks();
+    return;
+  }
   say('Ready to ride!', 'yay');
   $('cta').hidden = false;
 }
@@ -1406,19 +1438,25 @@ canvas.addEventListener(
 );
 
 // ---------- Buttons and the tuning panel ----------
+// Into the workbench: the toolbox is waiting to be opened
 function begin() {
   unlockAudio();
   $('start').hidden = true;
+  phase = 'closed';
+  renderLives();
+  refreshSteps();
+}
+
+// The welcome card sits over the storybook garage; Start lets the player tap the bike
+$('btn-start').onclick = () => {
+  unlockAudio();
   // Phones: go full screen so the browser bar doesn't eat the game. Browsers that can't
   // (like iPhone Safari) just carry on as normal. Upright or sideways is the player's choice.
   if (window.matchMedia('(pointer: coarse)').matches) {
     document.documentElement.requestFullscreen?.().catch(() => {});
   }
-  phase = 'closed';
-  renderLives();
-  refreshSteps();
-}
-$('btn-start').onclick = begin;
+  $('start').hidden = true;
+};
 
 // Starting over reloads the level and skips the welcome card
 function startOver() {
@@ -1431,13 +1469,30 @@ function startOver() {
 }
 $('btn-restart').onclick = () =>
   modal('Start the bike over from the beginning?', 'Start over', startOver, ['Keep building', () => ($('modal').hidden = true)]);
+const story = new Story();
+let skipIntro = false;
 try {
-  if (sessionStorage.getItem('gears-skip-intro')) {
-    sessionStorage.removeItem('gears-skip-intro');
-    begin();
-  }
+  skipIntro = !!sessionStorage.getItem('gears-skip-intro');
+  sessionStorage.removeItem('gears-skip-intro');
 } catch {
-  // Storage blocked: show the welcome card as usual.
+  // Storage blocked: show the welcome card and story as usual.
+}
+if (skipIntro) begin();
+else story.before(begin);
+
+function theEnd() {
+  modal(
+    "She's off! 🎉 Thanks for helping Mom finish the bike.",
+    'Build it again',
+    startOver,
+    [
+      'Watch the ride again',
+      () => {
+        $('modal').hidden = true;
+        story.after(theEnd);
+      },
+    ],
+  );
 }
 $('btn-hint').onclick = () => {
   unlockAudio();
@@ -1446,13 +1501,10 @@ $('btn-hint').onclick = () => {
   showHint();
 };
 $('btn-view').onclick = () => rig.set(phase === 'screw' ? screwView(currentScrew) : overview());
-$('btn-scene').onclick = () =>
-  modal(
-    'Coming next (Phase 1): the bike rolls back into the storybook garage. The girl hops on and rides off, Mom stands up and waves, and the dog chases after them, barking.',
-    'Build it again',
-    startOver,
-    ['Keep playing', () => ($('modal').hidden = true)],
-  );
+$('btn-scene').onclick = () => {
+  $('cta').hidden = true;
+  story.after(theEnd);
+};
 $('btn-how').onclick = () => howItWorks();
 
 // Phones: tap the progress dots to see every step, and it tucks away again by itself
