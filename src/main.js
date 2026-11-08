@@ -41,12 +41,13 @@ const camera = new THREE.PerspectiveCamera(38, 1, 0.02, 30);
 camera.layers.enable(0);
 const rig = new CameraRig(camera);
 
-scene.add(new THREE.HemisphereLight(0xe3f4ff, 0xf3d2a8, 0.9));
+const hemi = new THREE.HemisphereLight(0xe3f4ff, 0xf3d2a8, 0.9);
+scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0d8, 2.6);
 sun.position.set(-1.4, 2.6, 1.9);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -1.4, right: 1.6, top: 1.4, bottom: -0.8, near: 0.5, far: 7 });
+Object.assign(sun.shadow.camera, { left: -1.6, right: 1.8, top: 1.6, bottom: -1.4, near: 0.5, far: 8 });
 sun.shadow.camera.updateProjectionMatrix();
 sun.shadow.bias = -0.0004;
 sun.shadow.normalBias = 0.004;
@@ -54,7 +55,37 @@ scene.add(sun);
 const fill = new THREE.DirectionalLight(0xd6ecff, 0.6);
 fill.position.set(2, 1.2, 2.5);
 scene.add(fill);
-scene.add(Models.buildRoom());
+const room = Models.buildRoom();
+scene.add(room);
+
+// A warm hanging lamp that only switches on in the evening (dark mode)
+const lamp = new THREE.PointLight(0xffc77a, 0, 4, 1.4);
+lamp.position.set(0.15, 1.7, 0.7);
+scene.add(lamp);
+
+// Day (light) or evening (dark) garage, following the ⚙︎ setting or the phone's setting
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  const dark = tune.theme === 'dark' || (tune.theme === 'auto' && darkQuery.matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#1c1a28' : '#fbefdc');
+  const { floorMat, wallMat, boardMat } = room.userData;
+  scene.background.set(dark ? 0x1c1a28 : 0xfbefdc);
+  wallMat.color.set(dark ? 0x2b2940 : 0xfbefdc);
+  floorMat.color.set(dark ? 0x8a7a6c : 0xffffff);
+  boardMat.color.set(dark ? 0x8c7b66 : 0xffffff);
+  hemi.color.set(dark ? 0x7d86c4 : 0xe3f4ff);
+  hemi.groundColor.set(dark ? 0x4a3a30 : 0xf3d2a8);
+  hemi.intensity = dark ? 0.45 : 0.9;
+  sun.color.set(dark ? 0xffd2a0 : 0xfff0d8);
+  sun.intensity = dark ? 1.3 : 2.6;
+  fill.color.set(dark ? 0x8f9cff : 0xd6ecff);
+  fill.intensity = dark ? 0.35 : 0.6;
+  lamp.intensity = dark ? 3 : 0;
+  scene.environmentIntensity = dark ? 0.4 : 0.6;
+}
+darkQuery.addEventListener?.('change', applyTheme);
+applyTheme();
 
 // The glow around the finished bike
 const composer = new EffectComposer(renderer);
@@ -333,13 +364,29 @@ function angleAround(x, y, center) {
 
 function overview() {
   const t = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  if (upright) {
+    // Bike across the full width, toolbox in front of it (lower on screen), looking down a bit
+    const dist = Math.min(6, 0.8 / (t * camera.aspect));
+    return { target: V(0.08, 0.22, 0.6), dist, az: 0.06, pol: 1.05 };
+  }
   // Short sideways phone screens get extra headroom so the seat and handlebars stay in view
   const halfH = camera.aspect > 1.7 ? 0.58 : 0.5;
-  // Upright phones frame the bike with the toolbox peeking in at the edge
-  const upright = camera.aspect < 0.8;
-  const halfW = upright ? 0.78 : 1.0;
-  const dist = Math.min(5, Math.max(halfH / t, halfW / (t * camera.aspect)));
-  return { target: V(upright ? 0.2 : 0.27, 0.3, 0.1), dist, az: 0.12, pol: 1.15 };
+  const dist = Math.min(4, Math.max(halfH / t, 1.0 / (t * camera.aspect)));
+  return { target: V(0.27, 0.3, 0.1), dist, az: 0.12, pol: 1.15 };
+}
+
+// Upright screens are tall and narrow, so the toolbox sits in front of the bike instead of
+// beside it. Parts in the toolbox move with it.
+let upright = false;
+function applyLayout() {
+  upright = camera.aspect < 0.8;
+  if (upright) {
+    tb.group.position.set(0.22, 0, 1.35);
+    tb.group.rotation.y = -0.2;
+  } else {
+    tb.group.position.set(0.95, 0, 0.2);
+    tb.group.rotation.y = -0.5;
+  }
 }
 
 function toolboxView() {
@@ -1359,22 +1406,14 @@ canvas.addEventListener(
 );
 
 // ---------- Buttons and the tuning panel ----------
-let tipDone = false;
 function begin() {
   unlockAudio();
   $('start').hidden = true;
-  // Phones: go full screen and prefer sideways, so the browser bar doesn't eat the game.
-  // Browsers that can't (like iPhone Safari) just carry on as normal.
+  // Phones: go full screen so the browser bar doesn't eat the game. Browsers that can't
+  // (like iPhone Safari) just carry on as normal. Upright or sideways is the player's choice.
   if (window.matchMedia('(pointer: coarse)').matches) {
-    const el = document.documentElement;
-    el.requestFullscreen?.()
-      .then(() => screen.orientation?.lock?.('landscape'))
-      .catch(() => {});
+    document.documentElement.requestFullscreen?.().catch(() => {});
   }
-  setTimeout(() => {
-    tipDone = true;
-    $('rotate-tip').hidden = true;
-  }, 6000);
   phase = 'closed';
   renderLives();
   refreshSteps();
@@ -1455,6 +1494,7 @@ function buildTunePanel() {
       if (!s.options) out.textContent = fmt(tune[s.key]);
       saveTune();
       if (s.key === 'volume') setVolume(tune.volume);
+      if (s.key === 'theme') applyTheme();
       if (s.key === 'mode') {
         lives = tune.lives;
         renderLives();
@@ -1481,6 +1521,7 @@ function buildTunePanel() {
   reset.onclick = () => {
     resetTune();
     setVolume(tune.volume);
+    applyTheme();
     buildTunePanel();
     renderLives();
   };
@@ -1500,7 +1541,7 @@ function resize() {
   composer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
-  $('rotate-tip').hidden = tipDone || !(h > w * 1.1);
+  applyLayout();
   if (['intro', 'closed', 'build', 'done'].includes(phase)) rig.set(overview());
 }
 window.addEventListener('resize', resize);

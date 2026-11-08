@@ -4,12 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#fbefdc" />
-    <meta name="version" content="v3 · Nov 8" />
+    <meta name="version" content="v4 · Nov 8" />
     <title>Bodai Gears · Workbench</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=3" />
+    <link rel="stylesheet" href="style.css?v=4" />
     <script type="importmap">
       {
         "imports": {
@@ -40,12 +40,13 @@
     <div id="tag-wheel" class="tag"></div>
     <div id="callout"></div>
 
-    <!-- Bottom dock: buttons, compact step progress (phones only) and the message -->
+    <!-- Bottom dock: buttons, the message, then compact step progress at the very bottom (phones) -->
     <div id="dock">
       <div id="cta" hidden>
         <button id="btn-how" class="secondary">See how it works</button>
         <button id="btn-scene">Take it back to the scene →</button>
       </div>
+      <div id="bubble" hidden></div>
       <div id="progress-wrap">
         <ol id="steps-list" hidden></ol>
         <button id="progress" aria-label="Show all steps">
@@ -53,7 +54,6 @@
           <span id="progress-label"></span>
         </button>
       </div>
-      <div id="bubble" hidden></div>
     </div>
 
     <div id="modal" hidden>
@@ -67,7 +67,6 @@
     </div>
 
     <aside id="tune" hidden></aside>
-    <div id="rotate-tip" hidden>Tip: turn your phone sideways for more room</div>
 
     <div id="start">
       <div class="card">
@@ -78,6 +77,6 @@
       </div>
     </div>
 
-    <script type="module" src="src/main.js?v=3"></script>
+    <script type="module" src="src/main.js?v=4"></script>
   </body>
 </html>

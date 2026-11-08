@@ -8,8 +8,48 @@
   --coral: #ee4b3c;
   --pink: #ec4a92;
   --shadow: 0 10px 30px rgba(60, 40, 20, 0.18);
+  --glass: rgba(255, 250, 242, 0.75);
+  --glass-strong: rgba(255, 250, 242, 0.92);
+  --muted: rgba(43, 42, 69, 0.5);
+  --faint: rgba(43, 42, 69, 0.2);
+  --oops: #ffe7d6;
+  --veil: rgba(251, 239, 220, 0.55);
+  --line: #eadfcd;
+  --field: #fff;
+  --soft: #f3e9d9;
+  color-scheme: light;
   font-family: 'Nunito', ui-rounded, system-ui, sans-serif;
   color: var(--ink);
+}
+
+/* Dark mode: the garage in the evening */
+:root[data-theme='dark'] {
+  --ink: #f3ecff;
+  --cream: #1c1a28;
+  --card: #2a2739;
+  --teal-dark: #0c7f74;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --glass: rgba(42, 39, 57, 0.75);
+  --glass-strong: rgba(42, 39, 57, 0.92);
+  --muted: rgba(243, 236, 255, 0.55);
+  --faint: rgba(243, 236, 255, 0.22);
+  --oops: #5a3346;
+  --veil: rgba(20, 18, 30, 0.6);
+  --line: #403b55;
+  --field: #1f1d2b;
+  --soft: #3a3550;
+  color-scheme: dark;
+}
+
+:root[data-theme='dark'] .tag {
+  background: #120f1c;
+}
+
+:root[data-theme='dark'] #bubble.yay,
+:root[data-theme='dark'] #callout,
+:root[data-theme='dark'] #steps li.now,
+:root[data-theme='dark'] #steps-list li.now {
+  color: #2b2a45;
 }
 
 * {
@@ -80,8 +120,8 @@ button {
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(255, 250, 242, 0.75);
-  color: rgba(43, 42, 69, 0.5);
+  background: var(--glass);
+  color: var(--muted);
 }
 
 #steps li::before {
@@ -130,7 +170,7 @@ button {
 }
 
 #lives span {
-  color: rgba(43, 42, 69, 0.2);
+  color: var(--faint);
 }
 
 #lives span.on {
@@ -168,7 +208,7 @@ button {
   gap: 10px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 250, 242, 0.92);
+  background: var(--glass-strong);
   box-shadow: var(--shadow);
   color: var(--ink);
   font-weight: 800;
@@ -184,7 +224,7 @@ button {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: rgba(43, 42, 69, 0.18);
+  background: var(--faint);
 }
 
 #progress-dots i.done {
@@ -220,7 +260,7 @@ button {
   border-radius: 10px;
   font-size: 13px;
   font-weight: 800;
-  color: rgba(43, 42, 69, 0.5);
+  color: var(--muted);
 }
 
 #steps-list li::before {
@@ -263,7 +303,7 @@ button {
 }
 
 #bubble.oops {
-  background: #ffe7d6;
+  background: var(--oops);
 }
 
 #bubble.yay {
@@ -353,19 +393,6 @@ button {
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.08), var(--shadow);
 }
 
-#rotate-tip {
-  position: fixed;
-  top: max(64px, calc(env(safe-area-inset-top) + 56px));
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 13px;
-  font-weight: 800;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(255, 250, 242, 0.85);
-  pointer-events: none;
-}
-
 [hidden] {
   display: none !important;
 }
@@ -378,7 +405,7 @@ button {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(251, 239, 220, 0.55);
+  background: var(--veil);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
@@ -467,8 +494,9 @@ button {
   font: inherit;
   padding: 6px 8px;
   border-radius: 10px;
-  border: 2px solid #eadfcd;
-  background: #fff;
+  border: 2px solid var(--line);
+  background: var(--field);
+  color: var(--ink);
 }
 
 #tune output {
@@ -486,7 +514,7 @@ button {
 #tune .actions button {
   padding: 8px 12px;
   border-radius: 12px;
-  background: #f3e9d9;
+  background: var(--soft);
   font-weight: 800;
   font-size: 13px;
   color: var(--ink);
@@ -570,6 +598,10 @@ button {
   }
   #progress-wrap {
     display: block;
+  }
+  #dock {
+    bottom: max(8px, env(safe-area-inset-bottom));
+    gap: 6px;
   }
   .hud-right button {
     width: 40px;

@@ -3,6 +3,7 @@
 const KEY = 'bodai-gears-tune-v2';
 
 export const defaults = {
+  theme: 'auto',
   mode: 'gentle',
   pedalWeight: 0.7,
   grip: 6,
@@ -39,6 +40,7 @@ export function resetTune() {
 }
 
 export const tuneSpec = [
+  { key: 'theme', label: 'Look', options: [['auto', 'Match my phone'], ['light', 'Daytime (light)'], ['dark', 'Evening (dark)']] },
   { key: 'mode', label: 'Mode', options: [['gentle', 'Gentle'], ['classic', 'Classic']] },
   { key: 'pedalWeight', label: 'Pedal weight', min: 0.2, max: 3, step: 0.05 },
   { key: 'grip', label: 'Finger grip', min: 1, max: 20, step: 0.5 },

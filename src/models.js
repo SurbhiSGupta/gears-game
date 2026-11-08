@@ -478,18 +478,14 @@ export function buildRoom() {
     },
     3,
   );
-  const floor = new THREE.Mesh(
-    new THREE.PlaneGeometry(9, 9),
-    new THREE.MeshStandardMaterial({ map: wood, roughness: 0.7 }),
-  );
+  const floorMat = new THREE.MeshStandardMaterial({ map: wood, roughness: 0.7 });
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   room.add(floor);
 
-  const wall = new THREE.Mesh(
-    new THREE.PlaneGeometry(9, 5),
-    new THREE.MeshStandardMaterial({ color: 0xfbefdc, roughness: 1 }),
-  );
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xfbefdc, roughness: 1 });
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(9, 5), wallMat);
   wall.position.set(0, 2.5, -1.1);
   wall.receiveShadow = true;
   room.add(wall);
@@ -507,10 +503,8 @@ export function buildRoom() {
     }
   }, 1);
   peg.repeat.set(4, 2);
-  const board = new THREE.Mesh(
-    new THREE.BoxGeometry(2.6, 1.1, 0.02),
-    new THREE.MeshStandardMaterial({ map: peg, roughness: 0.85 }),
-  );
+  const boardMat = new THREE.MeshStandardMaterial({ map: peg, roughness: 0.85 });
+  const board = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.1, 0.02), boardMat);
   board.position.set(0.2, 1.1, -1.08);
   board.receiveShadow = true;
   room.add(board);
@@ -526,5 +520,7 @@ export function buildRoom() {
     tool.castShadow = true;
     room.add(tool);
   }
+  // Materials the day/evening themes recolor
+  room.userData = { floorMat, wallMat, boardMat };
   return room;
 }

@@ -37,7 +37,7 @@ export class CameraRig {
   }
 
   zoom(factor) {
-    this.goal.dist = clamp(this.goal.dist * factor, 0.14, 4.5);
+    this.goal.dist = clamp(this.goal.dist * factor, 0.14, 6.5);
   }
 
   update(dt, shake = 0) {
