@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#131417" />
+    <title>Gear Lookbook</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+          "./src/gearmaker.js": "./src/gearmaker.js?v=1",
+          "./src/models.js": "./src/models.js?v=1",
+          "./src/chain.js": "./src/chain.js?v=1"
+        }
+      }
+    </script>
+    <style>
+      :root {
+        --ink: #f1ede6;
+        --muted: rgba(241, 237, 230, 0.6);
+        --chip: rgba(255, 255, 255, 0.08);
+        --gold: #d9b25a;
+        font-family: 'Nunito', ui-rounded, system-ui, sans-serif;
+        color: var(--ink);
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #131417;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      #scene {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        touch-action: none;
+      }
+      header {
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 0 12px rgba(0, 0, 0, 0.7);
+        position: fixed;
+        top: max(16px, env(safe-area-inset-top));
+        left: 16px;
+        right: 16px;
+        pointer-events: none;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 900;
+        letter-spacing: 0.3px;
+      }
+      h1 span {
+        color: var(--gold);
+      }
+      #note {
+        margin: 6px 0 0;
+        max-width: 520px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      footer {
+        position: fixed;
+        left: 50%;
+        bottom: max(16px, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: max-content;
+        max-width: calc(100vw - 32px);
+      }
+      #views {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
+        padding: 6px;
+        border-radius: 16px;
+        background: rgba(20, 21, 24, 0.75);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+      }
+      button {
+        font: inherit;
+        font-weight: 800;
+        font-size: 14px;
+        color: var(--ink);
+        background: var(--chip);
+        border: 0;
+        border-radius: 11px;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+      button.on {
+        background: var(--gold);
+        color: #1b1a17;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--muted);
+      }
+      input[type='range'] {
+        width: 120px;
+        accent-color: var(--gold);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+    <header>
+      <h1>Bodai Gears <span>Lookbook</span></h1>
+      <p id="note"></p>
+    </header>
+    <footer>
+      <div id="views"></div>
+      <div class="controls">
+        <button id="play">Pause</button>
+        <label>Speed <input id="speed" type="range" min="0" max="1.5" step="0.05" value="0.35" /></label>
+      </div>
+    </footer>
+    <script type="module" src="src/lookbook.js?v=1"></script>
+  </body>
+</html>
