@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { makeGear, meshAngle, finishes, steel, nutStack, ratchetWheel } from './gearmaker.js';
+import { makeGear, meshAngle, finishes, steel, nutStack, toothRadius, toothFlank } from './gearmaker.js';
 import { feel, unlockAudio } from './feel.js';
 import { sprocketGeometry, pitchRadius } from './models.js';
 import { ChainPath, ChainLoop } from './chain.js';
@@ -153,14 +153,8 @@ for (const g of [brass, silver, carbon]) scene.add(g.group);
 bolt(silver.group.position.x, silver.group.position.y, silver.bore * 0.75, hubFront(0.014));
 bolt(carbon.group.position.x, carbon.group.position.y, carbon.bore * 0.8, hubFront(0.016));
 
-// ---------- The crank handle and ratchet on the brass gear ----------
+// ---------- The crank handle on the brass gear ----------
 const BRASS_FRONT = hubFront(0.012);
-const RATCHET_TEETH = 18;
-const R_IN = 0.021;
-const R_OUT = 0.0265;
-const ratchet = ratchetWheel(RATCHET_TEETH, R_IN, R_OUT, brass.bore, 0.0035, steel());
-ratchet.position.z = BRASS_FRONT;
-brass.group.add(ratchet);
 
 // Carbon steel arm from the hub out to a turned walnut knob
 const carbonMat = finishes.carbon(0.08);
@@ -176,7 +170,7 @@ armHole.absarc(0, 0, brass.bore, 0, TAU, true);
 armShape.holes.push(armHole);
 const armGeo = new THREE.ExtrudeGeometry(armShape, { depth: 0.0034, bevelEnabled: true, bevelThickness: 0.0006, bevelSize: 0.0006, bevelSegments: 2, curveSegments: 32 });
 const arm = new THREE.Mesh(armGeo, carbonMat);
-const ARM_Z = BRASS_FRONT + 0.0035 + 0.0006;
+const ARM_Z = BRASS_FRONT + 0.0006;
 arm.position.z = ARM_Z;
 arm.castShadow = true;
 arm.rotation.z = Math.PI * 0.62;
@@ -223,26 +217,39 @@ for (const m of [arm, knob]) m.userData.handle = true;
 // The brass gear's own axle and nut, on top of the arm
 bolt(brass.group.position.x, brass.group.position.y, brass.bore * 0.6, ARM_Z + 0.0034 + 0.0012);
 
-// ---------- The pawl: a little spring-loaded lever that clicks over the ratchet ----------
-const PAWL_ANGLE = THREE.MathUtils.degToRad(50); // where the pawl touches the ratchet
+// ---------- The pawl: a spring-loaded click riding on the brass gear's outer teeth ----------
+// Turning clockwise, each tooth lifts the pawl and it drops into the next gap with a click.
+// Turned back, the teeth push into the pawl and it jams, like a ratchet.
+const BRASS_TEETH = 48;
+const STEP = TAU / BRASS_TEETH;
+const BRASS_RP = (BRASS_TEETH * M) / 2;
+const BRASS_RA = BRASS_RP + M;
+const R_REST = BRASS_RP - 0.55 * M; // how deep the pawl's tip sits in a gap
+const DROP = toothFlank(BRASS_TEETH, M, R_REST) / STEP; // where the tip falls off a tooth
+const PAWL_ANGLE = THREE.MathUtils.degToRad(122); // where the pawl touches the rim (upper left)
 const bc = brass.group.position;
 const tipAt = (r) => V(bc.x + r * Math.cos(PAWL_ANGLE), bc.y + r * Math.sin(PAWL_ANGLE), 0);
-const pivotPos = V(bc.x + 0.043 * Math.cos(PAWL_ANGLE + 0.62), bc.y + 0.043 * Math.sin(PAWL_ANGLE + 0.62), 0);
-const restTip = tipAt(R_IN + 0.0004);
+// The pivot sits outside the rim, on the side the teeth turn toward when going backward,
+// so a backward push drives the tip straight into the pawl and it locks
+const pivotPos = V(bc.x + (BRASS_RA + 0.026) * Math.cos(PAWL_ANGLE + 0.3), bc.y + (BRASS_RA + 0.026) * Math.sin(PAWL_ANGLE + 0.3), 0);
+const restTip = tipAt(R_REST);
 const pawlLen = pivotPos.distanceTo(restTip);
 const pawlBase = Math.atan2(restTip.y - pivotPos.y, restTip.x - pivotPos.x);
-const pawlZ = BRASS_FRONT + 0.0006;
+const pawlZ = -0.0022; // in the same plane as the gear teeth
 const pawl = new THREE.Group();
 pawl.position.set(pivotPos.x, pivotPos.y, pawlZ);
 {
   const shape = new THREE.Shape();
-  shape.moveTo(0, -0.0034);
-  shape.lineTo(pawlLen * 0.82, -0.0026);
+  shape.moveTo(0, -0.0042);
+  shape.lineTo(pawlLen * 0.78, -0.003);
   shape.lineTo(pawlLen, 0);
-  shape.lineTo(pawlLen * 0.82, 0.0022);
-  shape.lineTo(0, 0.0034);
-  shape.absarc(0, 0, 0.0034, Math.PI / 2, (3 * Math.PI) / 2, false);
-  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.0024, bevelEnabled: true, bevelThickness: 0.0003, bevelSize: 0.0003, bevelSegments: 2, curveSegments: 16 });
+  shape.lineTo(pawlLen * 0.8, 0.0026);
+  shape.lineTo(0, 0.0042);
+  shape.absarc(0, 0, 0.0042, Math.PI / 2, (3 * Math.PI) / 2, false);
+  const hole = new THREE.Path();
+  hole.absarc(0, 0, 0.0016, 0, TAU, true);
+  shape.holes.push(hole);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.0038, bevelEnabled: true, bevelThickness: 0.0003, bevelSize: 0.0003, bevelSegments: 2, curveSegments: 16 });
   const lever = new THREE.Mesh(geo, finishes.carbon(0.03));
   lever.castShadow = true;
   pawl.add(lever);
@@ -255,18 +262,24 @@ scene.add(pawl);
   post.castShadow = true;
   scene.add(post);
   const cap = nutStack(0.0016, boltMat);
-  cap.position.set(pivotPos.x, pivotPos.y, pawlZ + 0.003);
+  cap.position.set(pivotPos.x, pivotPos.y, pawlZ + 0.0044);
   scene.add(cap);
 }
-// Coil spring pressing the pawl down onto the ratchet
-const springAnchor = V(pivotPos.x + 0.018 * Math.cos(PAWL_ANGLE + 1.5), pivotPos.y + 0.018 * Math.sin(PAWL_ANGLE + 1.5), pawlZ + 0.0012);
+// Short coil spring pressing the pawl onto the teeth, from a pin just beside the lever
+const springAnchor = (() => {
+  const d = V(Math.cos(pawlBase), Math.sin(pawlBase), 0);
+  const mid = pivotPos.clone().addScaledVector(d, pawlLen * 0.6);
+  let n = V(-d.y, d.x, 0);
+  if (n.dot(mid.clone().sub(V(bc.x, bc.y, 0))) < 0) n = n.negate(); // away from the gear
+  return mid.addScaledVector(n, 0.014).setZ(pawlZ + 0.0019);
+})();
 const springPost = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, springAnchor.z + 0.025, 16).rotateX(Math.PI / 2), steel());
 springPost.position.set(springAnchor.x, springAnchor.y, (springAnchor.z - 0.025) / 2);
 scene.add(springPost);
 const springMat = new THREE.MeshPhysicalMaterial({ color: 0xb9bec6, metalness: 1, roughness: 0.25 });
 let spring = null;
 function updateSpring() {
-  const end = new THREE.Vector3(pawlLen * 0.55, 0, 0.0012).applyMatrix4(pawl.matrixWorld);
+  const end = new THREE.Vector3(pawlLen * 0.6, 0, 0.0019).applyMatrix4(pawl.matrixWorld);
   const dir = end.clone().sub(springAnchor);
   const len = dir.length();
   dir.normalize();
@@ -379,9 +392,9 @@ const VIEWS = {
   },
   ratchet: {
     label: 'Ratchet',
-    note: 'The pawl rides up each ratchet tooth and snaps down with a click. It only lets the gear turn clockwise.',
-    target: tipAt(R_OUT),
-    from: tipAt(R_OUT).add(V(0.03, 0.05, 0.11)),
+    note: 'The pawl rides on the brass teeth and drops into each gap with a click. Turn backward and it locks.',
+    target: tipAt(BRASS_RP),
+    from: tipAt(BRASS_RP).add(V(-0.02, 0.05, 0.12)),
   },
   silver: {
     label: 'Silver',
@@ -537,7 +550,6 @@ camera.position.copy(VIEWS.train.target).add(VIEWS.train.from.clone().sub(VIEWS.
 controls.target.copy(VIEWS.train.target);
 goTo('train');
 
-const STEP = TAU / RATCHET_TEETH;
 let alphaFloor = -Infinity;
 let lastTooth = null;
 let lastCatch = 0;
@@ -560,9 +572,10 @@ function frame(now) {
 
   // The ratchet: the pawl's tip sits at a fixed angle; seen from the gear it slides along
   // the teeth. It may climb forward (clockwise) but catches on a tooth's edge going back.
+  // alpha: where the pawl tip is, measured on the turning gear; teeth are centered on whole STEPs
   let alpha = PAWL_ANGLE - drive.theta;
-  const tooth = Math.floor(alpha / STEP);
-  if (alphaFloor === -Infinity) alphaFloor = tooth * STEP;
+  const tooth = Math.floor(alpha / STEP - DROP);
+  if (alphaFloor === -Infinity) alphaFloor = (tooth + DROP) * STEP;
   if (alpha < alphaFloor) {
     alpha = alphaFloor + 1e-6;
     drive.theta = PAWL_ANGLE - alpha;
@@ -573,18 +586,18 @@ function frame(now) {
       lastCatch = now;
     }
   }
-  const t = Math.floor(alpha / STEP);
+  const t = Math.floor(alpha / STEP - DROP);
   if (lastTooth !== null && t > lastTooth) {
     feel('ratchet', Math.min(1, 0.5 + Math.abs(drive.omega) * 0.3));
-    alphaFloor = t * STEP;
+    alphaFloor = (t + DROP) * STEP;
   }
   lastTooth = t;
   // Let go mid-turn and the gears coast on, slowing down
   if (drive.held || auto) drive.omega = (drive.theta - prev) / Math.max(dt, 1e-3);
 
-  // Pawl lift follows the ramp it's resting on
-  const phase = alpha / STEP - t;
-  const lift = ((R_IN + (R_OUT - R_IN) * phase) - (R_IN + 0.0004)) / liftPerRadian;
+  // The pawl's tip rests on whatever part of a tooth is under it, never deeper than its rest
+  const phi = alpha - Math.round(alpha / STEP) * STEP;
+  const lift = (Math.max(R_REST, toothRadius(BRASS_TEETH, M, phi)) - R_REST) / liftPerRadian;
   pawl.rotation.z = pawlBase + lift;
   pawl.updateMatrixWorld();
   updateSpring();

@@ -384,27 +384,29 @@ export function nutStack(boreR, material) {
   return g;
 }
 
-// Ratchet wheel: each tooth ramps up gently, then drops off a sharp edge. Seen from the
-// front, it lets the wheel turn clockwise and catches when turned back.
-export function ratchetWheel(teeth, rIn, rOut, boreR, depth, material) {
-  const s = new THREE.Shape();
-  const step = TAU / teeth;
-  for (let i = 0; i < teeth; i++) {
-    const a = i * step;
-    const p = (r, ang) => [r * Math.cos(ang), r * Math.sin(ang)];
-    if (i === 0) s.moveTo(...p(rIn, a));
-    // the ramp climbs as the angle increases, the cliff drops straight back to the root
-    for (let k = 1; k <= 6; k++) {
-      const t = k / 6;
-      s.lineTo(...p(rIn + (rOut - rIn) * t, a + step * t * 0.96));
-    }
-    s.lineTo(...p(rIn, a + step * 0.98));
+// Angle from a tooth's center to its flank at radius r (the tooth is wider near the root)
+export function toothFlank(teeth, module, r, pressureAngle = 20) {
+  const pa = THREE.MathUtils.degToRad(pressureAngle);
+  const rp = (teeth * module) / 2;
+  const rb = rp * Math.cos(pa);
+  return Math.PI / (2 * teeth) + inv(pa) - inv(Math.acos(Math.min(1, rb / Math.max(r, rb))));
+}
+
+// Radius of the gear's outline at angle phi from a tooth center: the tip on top of a tooth,
+// the root in a gap, and the curved flank in between. Used to let a pawl ride the teeth.
+export function toothRadius(teeth, module, phi) {
+  const rp = (teeth * module) / 2;
+  const ra = rp + module;
+  const rf = rp - 1.25 * module;
+  const a = Math.abs(phi);
+  if (a <= toothFlank(teeth, module, ra)) return ra;
+  if (a >= toothFlank(teeth, module, Math.max(rf, rp * Math.cos(THREE.MathUtils.degToRad(20))))) return rf;
+  let lo = rf;
+  let hi = ra;
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    if (toothFlank(teeth, module, mid) > a) lo = mid;
+    else hi = mid;
   }
-  s.closePath();
-  const hole = new THREE.Path();
-  hole.absarc(0, 0, boreR, 0, TAU, true);
-  s.holes.push(hole);
-  const mesh = new THREE.Mesh(extrudeShape(s, depth, 0.0002, 12), material);
-  mesh.castShadow = true;
-  return mesh;
+  return (lo + hi) / 2;
 }
