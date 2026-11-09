@@ -3,105 +3,187 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#fbefdc" />
-    <meta name="version" content="v6 · Nov 8" />
-    <title>Bodai Gears · Workbench</title>
+    <meta name="theme-color" content="#131417" />
+    <title>Bodai Gears</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="style.css?v=6" />
     <script type="importmap">
       {
         "imports": {
           "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
           "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
-          "./src/camera.js": "./src/camera.js?v=6",
-          "./src/chain.js": "./src/chain.js?v=6",
-          "./src/feel.js": "./src/feel.js?v=6",
-          "./src/hints.js": "./src/hints.js?v=6",
-          "./src/learn.js": "./src/learn.js?v=6",
-          "./src/level1.js": "./src/level1.js?v=6",
-          "./src/models.js": "./src/models.js?v=6",
-          "./src/story.js": "./src/story.js?v=6",
-          "./src/tune.js": "./src/tune.js?v=6",
-          "./src/tween.js": "./src/tween.js?v=6"
+          "./src/gearmaker.js": "./src/gearmaker.js?v=7",
+          "./src/feel.js": "./src/feel.js?v=7",
+          "./src/tune.js": "./src/tune.js?v=7"
         }
       }
     </script>
+    <style>
+      :root {
+        --ink: #f1ede6;
+        --muted: rgba(241, 237, 230, 0.62);
+        --chip: rgba(255, 255, 255, 0.08);
+        --gold: #d9b25a;
+        font-family: 'Nunito', ui-rounded, system-ui, sans-serif;
+        color: var(--ink);
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #131417;
+        -webkit-user-select: none;
+        user-select: none;
+        overscroll-behavior: none;
+      }
+      #scene {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        display: block;
+        touch-action: none;
+      }
+      header {
+        position: fixed;
+        top: max(14px, env(safe-area-inset-top));
+        left: 16px;
+        right: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+        pointer-events: none;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 900;
+      }
+      h1 span {
+        color: var(--gold);
+      }
+      #count {
+        margin-left: auto;
+        font-size: 13px;
+        font-weight: 800;
+        color: var(--muted);
+      }
+      header button {
+        pointer-events: auto;
+      }
+      button {
+        font: inherit;
+        font-weight: 800;
+        font-size: 14px;
+        color: var(--ink);
+        background: var(--chip);
+        border: 0;
+        border-radius: 11px;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+      button.primary {
+        background: var(--gold);
+        color: #1b1a17;
+      }
+      #bubble {
+        position: fixed;
+        left: 50%;
+        bottom: max(16px, env(safe-area-inset-bottom));
+        transform: translateX(-50%);
+        width: max-content;
+        max-width: min(560px, calc(100vw - 32px));
+        padding: 10px 18px;
+        border-radius: 16px;
+        background: rgba(20, 21, 24, 0.82);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        font-size: 15px;
+        font-weight: 800;
+        text-align: center;
+        pointer-events: none;
+      }
+      #bubble.oops {
+        color: #ffb3a8;
+      }
+      #bubble.yay {
+        color: var(--gold);
+      }
+      #done {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(10, 10, 12, 0.45);
+      }
+      #done[hidden] {
+        display: none;
+      }
+      .card {
+        max-width: 380px;
+        margin: 16px;
+        padding: 24px;
+        border-radius: 22px;
+        background: #1d1f23;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        text-align: center;
+      }
+      .card h2 {
+        margin: 0 0 6px;
+        font-size: 24px;
+        font-weight: 900;
+        color: var(--gold);
+      }
+      .card p {
+        margin: 0 0 18px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .card .row {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+      }
+      nav {
+        position: fixed;
+        top: max(48px, calc(env(safe-area-inset-top) + 36px));
+        left: 16px;
+        display: flex;
+        gap: 12px;
+        font-size: 12px;
+        font-weight: 800;
+      }
+      nav a {
+        color: var(--muted);
+        text-decoration: none;
+      }
+    </style>
   </head>
   <body>
     <canvas id="scene"></canvas>
-    <svg id="hints" aria-hidden="true"></svg>
-
-    <header class="hud-top">
-      <div class="brand">Bodai Gears <span>Workbench</span></div>
-      <ol id="steps"></ol>
+    <header>
+      <h1>Bodai <span>Gears</span></h1>
+      <span id="count"></span>
+      <button id="reset">Reset</button>
     </header>
-
-    <div class="hud-right">
-      <div id="lives" hidden></div>
-      <button id="btn-restart" title="Start over">↺</button>
-      <button id="btn-hint" title="Show a hint">💡</button>
-      <button id="btn-view" title="Reset the view">⤢</button>
-      <button id="btn-tune" title="Tune the feel">⚙︎</button>
-    </div>
-
-    <div id="tag-pedal" class="tag"></div>
-    <div id="tag-wheel" class="tag"></div>
-    <div id="callout"></div>
-
-    <!-- Bottom dock: buttons, the message, then compact step progress at the very bottom (phones) -->
-    <div id="dock">
-      <div id="cta" hidden>
-        <button id="btn-how" class="secondary">See how it works</button>
-        <button id="btn-scene">Take it back to the scene →</button>
-      </div>
-      <div id="bubble" hidden></div>
-      <div id="progress-wrap">
-        <ol id="steps-list" hidden></ol>
-        <button id="progress" aria-label="Show all steps">
-          <span id="progress-dots"></span>
-          <span id="progress-label"></span>
-        </button>
-      </div>
-    </div>
-
-    <!-- The flat storybook garage (art/story.svg), shown before and after the workbench -->
-    <div id="story" hidden>
-      <div id="story-art"></div>
-      <div id="story-caption"></div>
-    </div>
-
-    <div id="learn" hidden>
+    <nav>
+      <a href="lookbook.html">Lookbook</a>
+      <a href="bike.html">Bike (old)</a>
+    </nav>
+    <div id="bubble"></div>
+    <div id="done" hidden>
       <div class="card">
-        <div id="learn-art"></div>
-        <h2 id="learn-title"></h2>
-        <p id="learn-text"></p>
-        <button id="learn-ok">Got it!</button>
-      </div>
-    </div>
-
-    <div id="modal" hidden>
-      <div class="card">
-        <p id="modal-text"></p>
-        <div class="modal-actions">
-          <button id="modal-btn2" class="secondary" hidden></button>
-          <button id="modal-btn"></button>
+        <h2>It turns!</h2>
+        <p>The brass gear now drives the stuck carbon gear through your three gears. Each one turns the opposite way to its neighbour.</p>
+        <div class="row">
+          <button id="keep">Keep turning</button>
+          <button id="again" class="primary">Play again</button>
         </div>
       </div>
     </div>
-
-    <aside id="tune" hidden></aside>
-
-    <div id="start">
-      <div class="card">
-        <h1>Let's finish the bike!</h1>
-        <p>Mom and her daughter have the frame ready. Your job: the gears.</p>
-        <button id="btn-start">Start</button>
-        <p class="small">Sound on 🔊</p>
-      </div>
-    </div>
-
-    <script type="module" src="src/main.js?v=6"></script>
+    <script type="module" src="src/puzzle.js?v=9"></script>
   </body>
 </html>

@@ -1,6 +1,6 @@
 # Bodai Gears
 
-A playful 3D gears game. Level 1: finish a kid's bike by fitting the gears, pedals, chain and chain guard, then turn the pedals to see how the gears make the wheel spin.
+A playful 3D gears game. Phase 0: drag three gears from the tray onto the board to link a hand-cranked brass gear to a stuck carbon-steel gear. The earlier bike game is at `bike.html` and the gear look reference at `lookbook.html`.
 
 Plain HTML and JavaScript with [three.js](https://threejs.org) from a CDN, so there's no build step.
 
