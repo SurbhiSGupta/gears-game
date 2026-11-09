@@ -7,7 +7,8 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { makeGear, meshAngle, finishes, steel } from './gearmaker.js';
+import { makeGear, meshAngle, finishes, steel, nutStack, ratchetWheel } from './gearmaker.js';
+import { feel, unlockAudio } from './feel.js';
 import { sprocketGeometry, pitchRadius } from './models.js';
 import { ChainPath, ChainLoop } from './chain.js';
 
@@ -125,33 +126,174 @@ function plate(w, h, x) {
   scene.add(g);
 }
 
-// Steel axle through each gear with a polished dome cap
-function axle(x, y, r, len) {
-  const a = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 24).rotateX(Math.PI / 2), steel());
-  a.position.set(x, y, -0.025 + len / 2);
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(r * 1.4, 24, 12, 0, TAU, 0, Math.PI / 2).rotateX(Math.PI / 2), steel());
-  cap.position.set(x, y, -0.025 + len);
-  for (const m of [a, cap]) m.castShadow = true;
-  scene.add(a, cap);
+// Steel axle from the plate up through a gear, finished with a washer and hex nut on top
+const boltMat = new THREE.MeshPhysicalMaterial({ color: 0xc3c8cf, metalness: 1, roughness: 0.24, clearcoat: 0.2 });
+function bolt(x, y, boreR, topZ, parent = scene) {
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(boreR * 0.98, boreR * 0.98, topZ + 0.025, 24).rotateX(Math.PI / 2), boltMat);
+  shaft.position.set(x, y, (topZ - 0.025) / 2);
+  const nut = nutStack(boreR, boltMat);
+  nut.position.set(x, y, topZ);
+  parent.add(shaft, nut);
+  return nut;
 }
 
-// ---------- The gear train: brass, silver and black, all meshing ----------
+// ---------- The gear train: brass, silver and carbon steel, all meshing ----------
 const M = 0.0038; // tooth size (module), meters
 plate(0.48, 0.3, -0.01);
 const brass = makeGear({ teeth: 48, module: M, thickness: 0.012, finish: 'brass', web: 'spokes', spokes: 5 });
 const silver = makeGear({ teeth: 24, module: M, thickness: 0.014, finish: 'silver', web: 'holes' });
-const black = makeGear({ teeth: 16, module: M, thickness: 0.016, finish: 'black', web: 'solid' });
+const carbon = makeGear({ teeth: 16, module: M, thickness: 0.016, finish: 'carbon', web: 'solid' });
 const beta1 = THREE.MathUtils.degToRad(14);
 const beta2 = THREE.MathUtils.degToRad(-32);
 brass.group.position.set(-0.12, -0.014, 0);
 silver.group.position.copy(brass.group.position).add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar(((48 + 24) * M) / 2));
-black.group.position.copy(silver.group.position).add(V(Math.cos(beta2), Math.sin(beta2)).multiplyScalar(((24 + 16) * M) / 2));
-for (const g of [brass, silver, black]) {
-  scene.add(g.group);
-  axle(g.group.position.x, g.group.position.y, g.bore * 0.95, 0.046);
-}
+carbon.group.position.copy(silver.group.position).add(V(Math.cos(beta2), Math.sin(beta2)).multiplyScalar(((24 + 16) * M) / 2));
+const hubFront = (thickness) => (thickness * 1.7) / 2; // front face of a gear's hub
+for (const g of [brass, silver, carbon]) scene.add(g.group);
+bolt(silver.group.position.x, silver.group.position.y, silver.bore * 0.75, hubFront(0.014));
+bolt(carbon.group.position.x, carbon.group.position.y, carbon.bore * 0.8, hubFront(0.016));
 
-// ---------- Bike gears: silver chainring on a black spider, black rear cog, chain ----------
+// ---------- The crank handle and ratchet on the brass gear ----------
+const BRASS_FRONT = hubFront(0.012);
+const RATCHET_TEETH = 18;
+const R_IN = 0.021;
+const R_OUT = 0.0265;
+const ratchet = ratchetWheel(RATCHET_TEETH, R_IN, R_OUT, brass.bore, 0.0035, steel());
+ratchet.position.z = BRASS_FRONT;
+brass.group.add(ratchet);
+
+// Carbon steel arm from the hub out to a turned walnut knob
+const carbonMat = finishes.carbon(0.08);
+const ARM = 0.068;
+const armShape = new THREE.Shape();
+armShape.moveTo(0, -0.0085);
+armShape.lineTo(ARM, -0.0055);
+armShape.absarc(ARM, 0, 0.0055, -Math.PI / 2, Math.PI / 2, false);
+armShape.lineTo(0, 0.0085);
+armShape.absarc(0, 0, 0.0085, Math.PI / 2, (3 * Math.PI) / 2, false);
+const armHole = new THREE.Path();
+armHole.absarc(0, 0, brass.bore, 0, TAU, true);
+armShape.holes.push(armHole);
+const armGeo = new THREE.ExtrudeGeometry(armShape, { depth: 0.0034, bevelEnabled: true, bevelThickness: 0.0006, bevelSize: 0.0006, bevelSegments: 2, curveSegments: 32 });
+const arm = new THREE.Mesh(armGeo, carbonMat);
+const ARM_Z = BRASS_FRONT + 0.0035 + 0.0006;
+arm.position.z = ARM_Z;
+arm.castShadow = true;
+arm.rotation.z = Math.PI * 0.62;
+brass.group.add(arm);
+
+function woodTexture() {
+  const c = document.createElement('canvas');
+  c.width = 64;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#6a3a20';
+  ctx.fillRect(0, 0, 64, 256);
+  for (let i = 0; i < 40; i++) {
+    const x = Math.random() * 64;
+    ctx.strokeStyle = `rgba(${40 + Math.random() * 30},${20 + Math.random() * 12},10,0.5)`;
+    ctx.lineWidth = 1 + Math.random() * 2;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.bezierCurveTo(x + 6, 80, x - 6, 170, x + 2, 256);
+    ctx.stroke();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+const knobProfile = [
+  [0, 0], [0.0042, 0], [0.0046, 0.003], [0.004, 0.006], [0.0062, 0.015], [0.0068, 0.024], [0.0064, 0.03], [0.0045, 0.0335], [0, 0.034],
+].map(([r, y]) => new THREE.Vector2(r, y));
+const knob = new THREE.Mesh(
+  new THREE.LatheGeometry(knobProfile, 40).rotateX(Math.PI / 2),
+  new THREE.MeshPhysicalMaterial({ map: woodTexture(), roughness: 0.42, clearcoat: 0.7, clearcoatRoughness: 0.2 }),
+);
+knob.castShadow = true;
+const knobPivot = new THREE.Group(); // keeps the knob upright-feeling as the arm sweeps around
+knobPivot.position.set(ARM, 0, 0.0034 + 0.0012);
+knobPivot.add(knob);
+arm.add(knobPivot);
+const knobCap = nutStack(0.0022, boltMat);
+knobCap.position.set(ARM, 0, 0.0034 + 0.0012 + 0.034);
+arm.add(knobCap);
+for (const m of [arm, knob]) m.userData.handle = true;
+
+// The brass gear's own axle and nut, on top of the arm
+bolt(brass.group.position.x, brass.group.position.y, brass.bore * 0.6, ARM_Z + 0.0034 + 0.0012);
+
+// ---------- The pawl: a little spring-loaded lever that clicks over the ratchet ----------
+const PAWL_ANGLE = THREE.MathUtils.degToRad(50); // where the pawl touches the ratchet
+const bc = brass.group.position;
+const tipAt = (r) => V(bc.x + r * Math.cos(PAWL_ANGLE), bc.y + r * Math.sin(PAWL_ANGLE), 0);
+const pivotPos = V(bc.x + 0.043 * Math.cos(PAWL_ANGLE + 0.62), bc.y + 0.043 * Math.sin(PAWL_ANGLE + 0.62), 0);
+const restTip = tipAt(R_IN + 0.0004);
+const pawlLen = pivotPos.distanceTo(restTip);
+const pawlBase = Math.atan2(restTip.y - pivotPos.y, restTip.x - pivotPos.x);
+const pawlZ = BRASS_FRONT + 0.0006;
+const pawl = new THREE.Group();
+pawl.position.set(pivotPos.x, pivotPos.y, pawlZ);
+{
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -0.0034);
+  shape.lineTo(pawlLen * 0.82, -0.0026);
+  shape.lineTo(pawlLen, 0);
+  shape.lineTo(pawlLen * 0.82, 0.0022);
+  shape.lineTo(0, 0.0034);
+  shape.absarc(0, 0, 0.0034, Math.PI / 2, (3 * Math.PI) / 2, false);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.0024, bevelEnabled: true, bevelThickness: 0.0003, bevelSize: 0.0003, bevelSegments: 2, curveSegments: 16 });
+  const lever = new THREE.Mesh(geo, finishes.carbon(0.03));
+  lever.castShadow = true;
+  pawl.add(lever);
+}
+scene.add(pawl);
+// Brass post the pawl swings on, and a tiny pivot screw
+{
+  const post = new THREE.Mesh(new THREE.CylinderGeometry(0.0032, 0.0032, pawlZ + 0.025, 20).rotateX(Math.PI / 2), finishes.brass(0.01)[1]);
+  post.position.set(pivotPos.x, pivotPos.y, (pawlZ - 0.025) / 2);
+  post.castShadow = true;
+  scene.add(post);
+  const cap = nutStack(0.0016, boltMat);
+  cap.position.set(pivotPos.x, pivotPos.y, pawlZ + 0.003);
+  scene.add(cap);
+}
+// Coil spring pressing the pawl down onto the ratchet
+const springAnchor = V(pivotPos.x + 0.018 * Math.cos(PAWL_ANGLE + 1.5), pivotPos.y + 0.018 * Math.sin(PAWL_ANGLE + 1.5), pawlZ + 0.0012);
+const springPost = new THREE.Mesh(new THREE.CylinderGeometry(0.002, 0.002, springAnchor.z + 0.025, 16).rotateX(Math.PI / 2), steel());
+springPost.position.set(springAnchor.x, springAnchor.y, (springAnchor.z - 0.025) / 2);
+scene.add(springPost);
+const springMat = new THREE.MeshPhysicalMaterial({ color: 0xb9bec6, metalness: 1, roughness: 0.25 });
+let spring = null;
+function updateSpring() {
+  const end = new THREE.Vector3(pawlLen * 0.55, 0, 0.0012).applyMatrix4(pawl.matrixWorld);
+  const dir = end.clone().sub(springAnchor);
+  const len = dir.length();
+  dir.normalize();
+  const side = V(-dir.y, dir.x, 0);
+  const pts = [];
+  const turns = 9;
+  for (let i = 0; i <= 120; i++) {
+    const t = i / 120;
+    const a = t * turns * TAU;
+    pts.push(springAnchor.clone().addScaledVector(dir, t * len).addScaledVector(side, Math.cos(a) * 0.0012).add(V(0, 0, Math.sin(a) * 0.0012)));
+  }
+  const geo = new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 160, 0.00028, 6, false);
+  if (spring) {
+    spring.geometry.dispose();
+    spring.geometry = geo;
+  } else {
+    spring = new THREE.Mesh(geo, springMat);
+    scene.add(spring);
+  }
+}
+// How far the pawl must rotate to lift its tip by a given amount (measured once)
+const liftPerRadian = (() => {
+  const tip = (ang) => V(pivotPos.x + pawlLen * Math.cos(ang), pivotPos.y + pawlLen * Math.sin(ang), 0).distanceTo(V(bc.x, bc.y, 0));
+  return (tip(pawlBase + 0.001) - tip(pawlBase)) / 0.001;
+})();
+
+// ---------- Bike gears: silver chainring on a carbon spider, carbon rear cog, chain ----------
 const BIKE_X = 0.9;
 plate(0.5, 0.26, BIKE_X);
 const ringTeeth = 32;
@@ -165,13 +307,12 @@ const chainring = new THREE.Group();
 {
   const { geo } = sprocketGeometry(ringTeeth, { holes: 0, bore: 0.042, thickness: 0.003 });
   chainring.add(new THREE.Mesh(geo, finishes.silver(ringR + 0.005)));
-  // Five-arm black spider: a round hub with straight tapered arms out to the chainring bolts
   const arms = 5;
-  const spiderMat = finishes.black(0.05);
+  const spiderMat = finishes.carbon(0.05);
   const extrude = (shape, depth, z) => {
-    const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.0007, bevelSize: 0.0007, bevelSegments: 2, curveSegments: 32 });
-    geo.translate(0, 0, z);
-    return new THREE.Mesh(geo, spiderMat);
+    const g = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: true, bevelThickness: 0.0007, bevelSize: 0.0007, bevelSegments: 2, curveSegments: 32 });
+    g.translate(0, 0, z);
+    return new THREE.Mesh(g, spiderMat);
   };
   const hubShape = new THREE.Shape();
   hubShape.absarc(0, 0, 0.022, 0, TAU, false);
@@ -181,32 +322,25 @@ const chainring = new THREE.Group();
   chainring.add(extrude(hubShape, 0.009, 0.0015));
   for (let i = 0; i < arms; i++) {
     const a = (i / arms) * TAU;
-    // Arm along +x from the hub to the bolt, wide at the root and narrower at the rounded tip
-    const arm = new THREE.Shape();
-    arm.moveTo(0.012, -0.0085);
-    arm.lineTo(0.046, -0.0055);
-    arm.absarc(0.046, 0, 0.0055, -Math.PI / 2, Math.PI / 2, false);
-    arm.lineTo(0.012, 0.0085);
-    arm.lineTo(0.012, -0.0085);
-    const mesh = extrude(arm, 0.006, 0.0015);
+    const armS = new THREE.Shape();
+    armS.moveTo(0.012, -0.0085);
+    armS.lineTo(0.046, -0.0055);
+    armS.absarc(0.046, 0, 0.0055, -Math.PI / 2, Math.PI / 2, false);
+    armS.lineTo(0.012, 0.0085);
+    armS.lineTo(0.012, -0.0085);
+    const mesh = extrude(armS, 0.006, 0.0015);
     mesh.rotation.z = a;
     chainring.add(mesh);
-  }
-  for (let i = 0; i < arms; i++) {
-    const a = (i / arms) * TAU;
-    const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.0042, 0.0042, 0.003, 32).rotateX(Math.PI / 2), steel());
-    bolt.position.set(0.046 * Math.cos(a), 0.046 * Math.sin(a), 0.0095);
-    const slot = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.0009, 0.0008), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-    slot.position.set(bolt.position.x, bolt.position.y, 0.0112);
-    slot.rotation.z = a;
-    chainring.add(bolt, slot);
+    const b = nutStack(0.0024, boltMat);
+    b.position.set(0.046 * Math.cos(a), 0.046 * Math.sin(a), 0.0082);
+    chainring.add(b);
   }
 }
 chainring.position.copy(ringPos);
 const cog = new THREE.Group();
 {
   const { geo } = sprocketGeometry(cogTeeth, { holes: 6, bore: 0.008, thickness: 0.003 });
-  cog.add(new THREE.Mesh(geo, finishes.black(cogR + 0.005)));
+  cog.add(new THREE.Mesh(geo, finishes.carbon(cogR + 0.005)));
 }
 cog.position.copy(cogPos);
 for (const g of [chainring, cog]) {
@@ -218,8 +352,8 @@ for (const g of [chainring, cog]) {
   });
   scene.add(g);
 }
-axle(ringPos.x, ringPos.y, 0.009, 0.045);
-axle(cogPos.x, cogPos.y, 0.006, 0.04);
+bolt(ringPos.x, ringPos.y, 0.009, ringPos.z + 0.0105);
+bolt(cogPos.x, cogPos.y, 0.0075, ringPos.z + 0.0015);
 
 const chainMat = new THREE.MeshPhysicalMaterial({ color: 0x4f535a, metalness: 1, roughness: 0.3 });
 const chainPath = new ChainPath({ x: cogPos.x, y: cogPos.y }, cogR, { x: ringPos.x, y: ringPos.y }, ringR);
@@ -229,46 +363,48 @@ chain.group.position.z = ringPos.z;
 scene.add(chain.group);
 
 // ---------- Views ----------
+const contact = brass.group.position.clone().add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar((48 * M) / 2));
 const VIEWS = {
   train: {
     label: 'Gear train',
-    note: 'Brass, silver and black gears turning together on a brushed aluminium plate.',
+    note: 'Drag the wooden handle to turn the brass gear. Each gear turns the opposite way to the one it meshes with.',
     target: V(-0.01, 0, 0),
     from: V(0.07, 0.08, 0.7),
   },
   mesh: {
     label: 'Teeth close-up',
-    note: 'Where the brass teeth bite into the silver ones. Each tooth rolls against the next, with no slack.',
-    target: brass.group.position.clone().add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar((48 * M) / 2)),
-    from: brass.group.position.clone().add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar((48 * M) / 2)).add(V(0.04, 0.07, 0.13)),
+    note: 'Where the brass teeth push the silver ones round. Turn the handle and watch each tooth hand off to the next.',
+    target: contact,
+    from: contact.clone().add(V(0.04, 0.07, 0.13)),
   },
-  brass: {
-    label: 'Brass',
-    note: 'Satin brass, 48 teeth, five spokes. The machined face throws a bow-tie highlight as it turns.',
-    target: brass.group.position.clone(),
-    from: V(0.03, 0.1, 0.32),
+  ratchet: {
+    label: 'Ratchet',
+    note: 'The pawl rides up each ratchet tooth and snaps down with a click. It only lets the gear turn clockwise.',
+    target: tipAt(R_OUT),
+    from: tipAt(R_OUT).add(V(0.03, 0.05, 0.11)),
   },
   silver: {
     label: 'Silver',
-    note: 'Polished steel, 24 teeth, six drilled lightening holes and a keyed hub.',
+    note: 'Polished steel, 24 teeth, six drilled lightening holes, held on with a washer and hex nut.',
     target: silver.group.position.clone(),
     from: V(0.06, 0.05, 0.16),
   },
-  black: {
-    label: 'Black',
-    note: 'Black anodized, 16 teeth, with a set screw in the hub and machined edges.',
-    target: black.group.position.clone(),
+  carbon: {
+    label: 'Carbon steel',
+    note: 'Carbon steel, 16 teeth: dark gunmetal with a cool machined sheen.',
+    target: carbon.group.position.clone(),
     from: V(0.08, 0.04, 0.13),
   },
   bike: {
     label: 'Bike gears',
-    note: 'A real bike drivetrain: silver 32-tooth chainring on a black spider, black 16-tooth cog, steel chain.',
+    note: 'A real bike drivetrain: silver 32-tooth chainring on a carbon steel spider, carbon steel 16-tooth cog, steel chain.',
     target: V(BIKE_X, 0, 0),
     from: V(BIKE_X + 0.02, 0.1, 0.86),
   },
 };
 
 let fly = null;
+let current = 'train';
 function goTo(name) {
   const v = VIEWS[name];
   const portrait = camera.aspect < 0.9;
@@ -287,7 +423,6 @@ function goTo(name) {
   for (const b of document.querySelectorAll('#views button')) b.classList.toggle('on', b.dataset.view === name);
   current = name;
 }
-let current = 'train';
 
 const bar = $('views');
 for (const [name, v] of Object.entries(VIEWS)) {
@@ -299,12 +434,90 @@ for (const [name, v] of Object.entries(VIEWS)) {
 }
 
 let speed = 0.35;
-let playing = true;
+let auto = false;
 $('play').onclick = () => {
-  playing = !playing;
-  $('play').textContent = playing ? 'Pause' : 'Play';
+  unlockAudio();
+  auto = !auto;
+  $('play').textContent = auto ? 'Stop' : 'Auto-turn';
+  $('play').classList.toggle('on', auto);
 };
 $('speed').oninput = (e) => (speed = parseFloat(e.target.value));
+
+// ---------- Turning the handle ----------
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const handlePlane = new THREE.Plane(V(0, 0, 1), -(ARM_Z + 0.02));
+function pointerAngle(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.ray.intersectPlane(handlePlane, V());
+  return hit ? Math.atan2(hit.y - bc.y, hit.x - bc.x) : null;
+}
+function hitsHandle(e) {
+  const r = canvas.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const hits = raycaster.intersectObjects([arm], true);
+  return hits.length > 0;
+}
+
+const drive = { theta: 0, omega: 0, target: 0, held: false, last: null };
+const unwrap = (d) => (d > Math.PI ? d - TAU : d < -Math.PI ? d + TAU : d);
+window.addEventListener(
+  'pointerdown',
+  (e) => {
+    unlockAudio();
+    if (e.target !== canvas || !hitsHandle(e)) return;
+    controls.enabled = false;
+    drive.held = true;
+    drive.target = drive.theta;
+    drive.last = pointerAngle(e);
+    canvas.style.cursor = 'grabbing';
+  },
+  true,
+);
+window.addEventListener('pointermove', (e) => {
+  if (!drive.held) {
+    if (e.target === canvas) canvas.style.cursor = hitsHandle(e) ? 'grab' : '';
+    return;
+  }
+  const a = pointerAngle(e);
+  if (a == null || drive.last == null) {
+    drive.last = a;
+    return;
+  }
+  drive.target += unwrap(a - drive.last);
+  drive.last = a;
+});
+window.addEventListener('pointerup', () => {
+  if (!drive.held) return;
+  drive.held = false;
+  controls.enabled = true;
+  canvas.style.cursor = '';
+});
+
+// ---------- Which way each gear is turning ----------
+const tags = [brass, silver, carbon].map((g) => {
+  const el = document.createElement('div');
+  el.className = 'dir';
+  document.body.append(el);
+  return { g, el };
+});
+const _p = V();
+function placeTags(omegas) {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  tags.forEach(({ g, el }, i) => {
+    const om = omegas[i];
+    const on = Math.abs(om) > 0.05 && (current === 'train' || current === 'mesh');
+    el.classList.toggle('on', on);
+    if (!on) return;
+    el.textContent = om < 0 ? '↻ clockwise' : '↺ anticlockwise';
+    _p.copy(g.group.position).add(V(0, -(g.ra + 0.016), 0.02)).project(camera);
+    el.style.transform = `translate(${((_p.x + 1) / 2) * w}px, ${((1 - _p.y) / 2) * h}px) translate(-50%, -50%)`;
+  });
+}
 
 // ---------- Resize and loop ----------
 function resize() {
@@ -324,20 +537,67 @@ camera.position.copy(VIEWS.train.target).add(VIEWS.train.from.clone().sub(VIEWS.
 controls.target.copy(VIEWS.train.target);
 goTo('train');
 
-let theta = 0;
+const STEP = TAU / RATCHET_TEETH;
+let alphaFloor = -Infinity;
+let lastTooth = null;
+let lastCatch = 0;
 let crank = 0;
 let last = performance.now();
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  if (playing) {
-    theta -= speed * dt;
-    crank -= speed * 0.9 * dt;
+  const prev = drive.theta;
+
+  if (drive.held) {
+    // The gear follows your hand with a little weight
+    drive.theta += (drive.target - drive.theta) * Math.min(1, dt * 18);
+  } else if (auto) {
+    drive.theta -= speed * dt;
+  } else {
+    drive.theta += drive.omega * dt;
+    drive.omega *= Math.exp(-2.2 * dt);
   }
-  brass.group.rotation.z = theta;
-  const t2 = meshAngle(theta, 48, 24, beta1);
+
+  // The ratchet: the pawl's tip sits at a fixed angle; seen from the gear it slides along
+  // the teeth. It may climb forward (clockwise) but catches on a tooth's edge going back.
+  let alpha = PAWL_ANGLE - drive.theta;
+  const tooth = Math.floor(alpha / STEP);
+  if (alphaFloor === -Infinity) alphaFloor = tooth * STEP;
+  if (alpha < alphaFloor) {
+    alpha = alphaFloor + 1e-6;
+    drive.theta = PAWL_ANGLE - alpha;
+    if (drive.held) drive.target = Math.min(drive.target, drive.theta + 0.05);
+    drive.omega = 0;
+    if (now - lastCatch > 350 && Math.abs(drive.theta - prev) < 1e-9) {
+      feel('catch');
+      lastCatch = now;
+    }
+  }
+  const t = Math.floor(alpha / STEP);
+  if (lastTooth !== null && t > lastTooth) {
+    feel('ratchet', Math.min(1, 0.5 + Math.abs(drive.omega) * 0.3));
+    alphaFloor = t * STEP;
+  }
+  lastTooth = t;
+  // Let go mid-turn and the gears coast on, slowing down
+  if (drive.held || auto) drive.omega = (drive.theta - prev) / Math.max(dt, 1e-3);
+
+  // Pawl lift follows the ramp it's resting on
+  const phase = alpha / STEP - t;
+  const lift = ((R_IN + (R_OUT - R_IN) * phase) - (R_IN + 0.0004)) / liftPerRadian;
+  pawl.rotation.z = pawlBase + lift;
+  pawl.updateMatrixWorld();
+  updateSpring();
+
+  brass.group.rotation.z = drive.theta;
+  knobPivot.rotation.z = -drive.theta - arm.rotation.z;
+  const t2 = meshAngle(drive.theta, 48, 24, beta1);
   silver.group.rotation.z = t2;
-  black.group.rotation.z = meshAngle(t2, 24, 16, beta2);
+  carbon.group.rotation.z = meshAngle(t2, 24, 16, beta2);
+  const w1 = drive.omega;
+  placeTags([w1, (-w1 * 48) / 24, (w1 * 48) / 16]);
+
+  crank -= speed * 0.9 * dt;
   chainring.rotation.z = crank;
   cog.rotation.z = crank * (ringTeeth / cogTeeth);
   chain.offset = -crank * ringR;

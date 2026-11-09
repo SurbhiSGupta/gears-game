@@ -197,6 +197,18 @@ const recipes = {
   freewheel(s = 1) {
     noiseHit({ freq: 5200, q: 9, dur: 0.01, gain: 0.13 * s });
   },
+  // The pawl snapping off a ratchet tooth: a crisp metal tick
+  ratchet(s = 1) {
+    noiseHit({ freq: 4600, q: 7, dur: 0.012, gain: 0.32 * s });
+    tone({ freq: 2300, to: 1700, dur: 0.025, gain: 0.07 * s, type: 'triangle' });
+    buzz(9, 25);
+  },
+  // Turned backward: the pawl jams against a tooth
+  catch() {
+    noiseHit({ freq: 1400, q: 2, dur: 0.05, gain: 0.4 });
+    tone({ freq: 180, to: 110, dur: 0.08, gain: 0.3 });
+    buzz(30, 200);
+  },
   boing() {
     boing();
     buzz(20);

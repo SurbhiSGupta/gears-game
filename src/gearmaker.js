@@ -219,6 +219,13 @@ export const finishes = {
       side({ color: 0xeef0f3, roughness: 0.2 }),
     ];
   },
+  // Carbon steel: dark gunmetal with a faint cool sheen, machined like the others
+  carbon(radius) {
+    return [
+      face(radius, 31, 0.26, 0.07, { color: 0x4a4e55, anisotropy: 0.75, clearcoat: 0.25, clearcoatRoughness: 0.25 }),
+      side({ color: 0x555a62, roughness: 0.28 }),
+    ];
+  },
   black(radius) {
     return [
       face(radius, 23, 0.36, 0.06, { color: 0x1a1b1f, anisotropy: 0.55, clearcoat: 0.4, clearcoatRoughness: 0.3 }),
@@ -306,7 +313,98 @@ export function makeGear({ teeth, module, thickness, finish = 'brass', web = 'sp
   return { group, rp, ra, hubR, bore, teeth };
 }
 
-// Angle for gear j so its teeth sit in gear i's gaps, where j's center is at angle beta from i
+// Angle for gear j so a tooth of gear i always sits in a gap of gear j, where j's center is
+// at angle beta from i. Meshing gears turn opposite ways: as i turns by d, j turns by
+// -d * teethI / teethJ, so the teeth roll against each other and push j along.
 export function meshAngle(thetaI, teethI, teethJ, beta) {
-  return beta + Math.PI - ((beta - thetaI) * teethI) / teethJ - Math.PI / teethJ;
+  return beta + Math.PI - Math.PI / teethJ + ((beta - thetaI) * teethI) / teethJ;
+}
+
+// ---------- Fasteners and the ratchet ----------
+function extrudeShape(shape, depth, bevel = 0.0004, segments = 24) {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: depth - 2 * bevel,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 2,
+    curveSegments: segments,
+  });
+  geo.translate(0, 0, bevel);
+  return geo;
+}
+
+// Hex nut with chamfered corners, sitting on a flat washer, over a threaded axle end.
+// Built from z = 0 upward (place it on the face it bolts down).
+export function nutStack(boreR, material) {
+  const g = new THREE.Group();
+  const washer = new THREE.Shape();
+  washer.absarc(0, 0, boreR * 2.3, 0, TAU, false);
+  const wHole = new THREE.Path();
+  wHole.absarc(0, 0, boreR * 1.05, 0, TAU, true);
+  washer.holes.push(wHole);
+  const wGeo = extrudeShape(washer, boreR * 0.35, 0.0002, 40);
+  g.add(new THREE.Mesh(wGeo, material));
+
+  const across = boreR * 3.6;
+  const hex = new THREE.Shape();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * TAU + Math.PI / 6;
+    const r = across / 2 / Math.cos(Math.PI / 6);
+    if (i === 0) hex.moveTo(r * Math.cos(a), r * Math.sin(a));
+    else hex.lineTo(r * Math.cos(a), r * Math.sin(a));
+  }
+  hex.closePath();
+  const nHole = new THREE.Path();
+  nHole.absarc(0, 0, boreR * 0.98, 0, TAU, true);
+  hex.holes.push(nHole);
+  const nutH = boreR * 1.6;
+  const nGeo = extrudeShape(hex, nutH, boreR * 0.22, 6);
+  const nut = new THREE.Mesh(nGeo, material);
+  nut.position.z = boreR * 0.35;
+  g.add(nut);
+
+  // Axle end poking through the nut, with a small chamfer and thread rings
+  const tipH = boreR * 0.9;
+  const profile = [
+    [0, 0], [boreR * 0.98, 0], [boreR * 0.98, nutH + tipH * 0.75], [boreR * 0.8, nutH + tipH], [0, nutH + tipH],
+  ].map(([r, y]) => new THREE.Vector2(r, y));
+  const tip = new THREE.Mesh(new THREE.LatheGeometry(profile, 32).rotateX(Math.PI / 2), material);
+  tip.position.z = boreR * 0.35;
+  g.add(tip);
+  for (let i = 0; i < 3; i++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(boreR * 0.98, boreR * 0.05, 6, 32), material);
+    ring.position.z = boreR * 0.35 + nutH + tipH * (0.15 + i * 0.2);
+    g.add(ring);
+  }
+  g.traverse((o) => {
+    if (o.isMesh) o.castShadow = true;
+  });
+  g.userData.height = boreR * 0.35 + nutH + tipH;
+  return g;
+}
+
+// Ratchet wheel: each tooth ramps up gently, then drops off a sharp edge. Seen from the
+// front, it lets the wheel turn clockwise and catches when turned back.
+export function ratchetWheel(teeth, rIn, rOut, boreR, depth, material) {
+  const s = new THREE.Shape();
+  const step = TAU / teeth;
+  for (let i = 0; i < teeth; i++) {
+    const a = i * step;
+    const p = (r, ang) => [r * Math.cos(ang), r * Math.sin(ang)];
+    if (i === 0) s.moveTo(...p(rIn, a));
+    // the ramp climbs as the angle increases, the cliff drops straight back to the root
+    for (let k = 1; k <= 6; k++) {
+      const t = k / 6;
+      s.lineTo(...p(rIn + (rOut - rIn) * t, a + step * t * 0.96));
+    }
+    s.lineTo(...p(rIn, a + step * 0.98));
+  }
+  s.closePath();
+  const hole = new THREE.Path();
+  hole.absarc(0, 0, boreR, 0, TAU, true);
+  s.holes.push(hole);
+  const mesh = new THREE.Mesh(extrudeShape(s, depth, 0.0002, 12), material);
+  mesh.castShadow = true;
+  return mesh;
 }
