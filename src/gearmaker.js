@@ -68,66 +68,166 @@ function circleHole(x, y, r) {
   return p;
 }
 
-// Concentric lathe marks: used as a roughness and bump map on the gear faces
-export function ringTexture(radius, seed = 1, base = 0.32, spread = 0.16) {
-  const size = 1024;
+function seeded(seed) {
+  let s = seed;
+  return () => (s = (s * 16807) % 2147483647) / 2147483647;
+}
+
+function canvas(size) {
   const c = document.createElement('canvas');
   c.width = c.height = size;
+  return c;
+}
+
+// Extruded caps use the shape's x/y (meters) as UVs: map -radius..radius onto 0..1
+function fitToRadius(tex, radius) {
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.repeat.set(1 / (2 * radius), 1 / (2 * radius));
+  tex.offset.set(0.5, 0.5);
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// Roughness for a lathe-turned face: fine rings, a few hazy fingerprint smudges and
+// light scratches, so it reads as real worked metal instead of perfect plastic
+function roughnessCanvas(seed, base, ringSpread) {
+  const size = 1024;
+  const c = canvas(size);
   const ctx = c.getContext('2d');
-  let s = seed;
-  const rand = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  ctx.fillStyle = `rgb(${base * 255},${base * 255},${base * 255})`;
+  const rand = seeded(seed);
+  const g = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255);
+  ctx.fillStyle = `rgb(${g(base)},${g(base)},${g(base)})`;
   ctx.fillRect(0, 0, size, size);
-  for (let r = 2; r < size / 2; r += 1.4) {
-    const v = Math.max(0, Math.min(1, base + (rand() - 0.5) * spread));
-    ctx.strokeStyle = `rgb(${v * 255},${v * 255},${v * 255})`;
-    ctx.lineWidth = 1.2;
+  for (let r = 2; r < size * 0.71; r += 1.3) {
+    const v = base + (rand() - 0.5) * ringSpread;
+    ctx.strokeStyle = `rgb(${g(v)},${g(v)},${g(v)})`;
+    ctx.lineWidth = 1.1;
     ctx.beginPath();
     ctx.arc(size / 2, size / 2, r, 0, TAU);
     ctx.stroke();
   }
-  const tex = new THREE.CanvasTexture(c);
+  for (let i = 0; i < 16; i++) {
+    const x = rand() * size;
+    const y = rand() * size;
+    const r = 30 + rand() * 110;
+    const v = base + (rand() < 0.5 ? 0.12 : -0.06);
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, `rgba(${g(v)},${g(v)},${g(v)},0.35)`);
+    grad.addColorStop(1, `rgba(${g(v)},${g(v)},${g(v)},0)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(x - r, y - r, 2 * r, 2 * r);
+  }
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 40; i++) {
+    const x = rand() * size;
+    const y = rand() * size;
+    const len = 8 + rand() * 45;
+    const a = rand() * TAU;
+    const v = base + 0.12;
+    ctx.strokeStyle = `rgba(${g(v)},${g(v)},${g(v)},${0.1 + rand() * 0.18})`;
+    ctx.lineWidth = 0.5 + rand() * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + Math.cos(a + 0.3) * len * 0.5, y + Math.sin(a + 0.3) * len * 0.5, x + Math.cos(a) * len, y + Math.sin(a) * len);
+    ctx.stroke();
+  }
+  return c;
+}
+
+// Anisotropy direction map: tangent to circles around the center. On a turned face this
+// gives the "bow-tie" highlight that real machined gears have.
+let circularCanvas = null;
+function circularDirections() {
+  if (circularCanvas) return circularCanvas;
+  const size = 512;
+  const c = canvas(size);
+  const ctx = c.getContext('2d');
+  const img = ctx.createImageData(size, size);
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      // Canvas rows run downward but texture v runs upward (flipY), so work in uv space
+      const x = (px + 0.5) / size - 0.5;
+      const y = 1 - (py + 0.5) / size - 0.5;
+      const len = Math.hypot(x, y) || 1;
+      const i = (py * size + px) * 4;
+      img.data[i] = ((-y / len) * 0.5 + 0.5) * 255;
+      img.data[i + 1] = ((x / len) * 0.5 + 0.5) * 255;
+      img.data[i + 2] = 255;
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  circularCanvas = c;
+  return c;
+}
+
+// Fine noise for the tooth flanks and edges, tiled in meters
+let sideNoise = null;
+function sideRoughness() {
+  if (!sideNoise) {
+    const c = canvas(256);
+    const ctx = c.getContext('2d');
+    const rand = seeded(99);
+    const img = ctx.createImageData(256, 256);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = 128 + (rand() - 0.5) * 70;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    sideNoise = c;
+  }
+  const tex = new THREE.CanvasTexture(sideNoise);
   tex.colorSpace = THREE.NoColorSpace;
-  tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
-  // Extruded caps use the shape's x/y (meters) as UVs: map -radius..radius onto 0..1
-  tex.repeat.set(1 / (2 * radius), 1 / (2 * radius));
-  tex.offset.set(0.5, 0.5);
-  tex.anisotropy = 8;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(60, 60);
   return tex;
+}
+
+function face(radius, seed, base, spread, props) {
+  const rough = fitToRadius(new THREE.CanvasTexture(roughnessCanvas(seed, base, spread)), radius);
+  const dirs = fitToRadius(new THREE.CanvasTexture(circularDirections()), radius);
+  return new THREE.MeshPhysicalMaterial({
+    metalness: 1,
+    roughness: 1,
+    roughnessMap: rough,
+    bumpMap: rough,
+    bumpScale: 0.025,
+    anisotropy: 0.8,
+    anisotropyMap: dirs,
+    ...props,
+  });
+}
+
+function side(props) {
+  return new THREE.MeshPhysicalMaterial({ metalness: 1, roughnessMap: sideRoughness(), ...props });
 }
 
 // Metal finishes. Each returns [face material, side material] for extruded parts.
 export const finishes = {
   brass(radius) {
-    const rough = ringTexture(radius, 7, 0.3, 0.07);
-    const face = new THREE.MeshPhysicalMaterial({
-      color: 0xd9b25a, metalness: 1, roughness: 1, roughnessMap: rough, bumpMap: rough, bumpScale: 0.12,
-      clearcoat: 0.25, clearcoatRoughness: 0.2,
-    });
-    const side = new THREE.MeshPhysicalMaterial({ color: 0xe0bb66, metalness: 1, roughness: 0.22 });
-    return [face, side];
+    return [
+      face(radius, 7, 0.3, 0.08, { color: 0xd6ad57, clearcoat: 0.35, clearcoatRoughness: 0.18 }),
+      side({ color: 0xdcb562, roughness: 0.3 }),
+    ];
   },
   silver(radius) {
-    const rough = ringTexture(radius, 11, 0.16, 0.06);
-    const face = new THREE.MeshPhysicalMaterial({
-      color: 0xe9ecf0, metalness: 1, roughness: 1, roughnessMap: rough, bumpMap: rough, bumpScale: 0.1,
-    });
-    const side = new THREE.MeshPhysicalMaterial({ color: 0xf2f4f7, metalness: 1, roughness: 0.12 });
-    return [face, side];
+    return [
+      face(radius, 11, 0.2, 0.07, { color: 0xe6e9ee }),
+      side({ color: 0xeef0f3, roughness: 0.2 }),
+    ];
   },
   black(radius) {
-    const rough = ringTexture(radius, 23, 0.4, 0.06);
-    const face = new THREE.MeshPhysicalMaterial({
-      color: 0x16171a, metalness: 0.7, roughness: 1, roughnessMap: rough, bumpMap: rough, bumpScale: 0.1,
-      clearcoat: 0.6, clearcoatRoughness: 0.25,
-    });
-    // Black anodized parts show bright machined metal where the edges are chamfered
-    const side = new THREE.MeshPhysicalMaterial({ color: 0x2a2c31, metalness: 0.85, roughness: 0.3 });
-    return [face, side];
+    return [
+      face(radius, 23, 0.36, 0.06, { color: 0x1a1b1f, anisotropy: 0.55, clearcoat: 0.4, clearcoatRoughness: 0.3 }),
+      side({ color: 0x25272c, roughness: 0.42 }),
+    ];
   },
 };
 
-export const steel = () => new THREE.MeshPhysicalMaterial({ color: 0xc9ced6, metalness: 1, roughness: 0.18 });
+export const steel = () => new THREE.MeshPhysicalMaterial({ color: 0xc9ced6, metalness: 1, roughness: 0.16, clearcoat: 0.3 });
 
 // A complete spur gear: toothed body with a spoked or drilled web, raised hub, keyed bore
 export function makeGear({ teeth, module, thickness, finish = 'brass', web = 'spokes', spokes = 5 }) {

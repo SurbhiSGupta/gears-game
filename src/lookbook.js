@@ -3,6 +3,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { makeGear, meshAngle, finishes, steel } from './gearmaker.js';
 import { sprocketGeometry, pitchRadius } from './models.js';
 import { ChainPath, ChainLoop } from './chain.js';
@@ -58,6 +62,17 @@ scene.add(rim);
 
 const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 20);
 const controls = new OrbitControls(camera, canvas);
+
+// Ambient occlusion darkens the tight spots: between meshing teeth, in tooth gaps and where
+// gears sit over the plate. It's what makes them look like they really grip each other.
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const ao = new GTAOPass(scene, camera, 256, 256);
+ao.updateGtaoMaterial({ radius: 0.01, distanceExponent: 1.4, thickness: 1, scale: 1.4, samples: 16 });
+ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 16 });
+ao.blendIntensity = 1;
+composer.addPass(ao);
+composer.addPass(new OutputPass());
 controls.enableDamping = true;
 controls.dampingFactor = 0.08;
 controls.minDistance = 0.08;
@@ -85,7 +100,7 @@ function brushedTexture() {
   return t;
 }
 // Light brushed aluminium, so brass, silver and black all stand out against it
-const plateMat = new THREE.MeshPhysicalMaterial({ color: 0xa4a7ac, metalness: 0.9, roughness: 1, roughnessMap: brushedTexture() });
+const plateMat = new THREE.MeshPhysicalMaterial({ color: 0xa4a7ac, metalness: 0.72, roughness: 0.7, roughnessMap: brushedTexture(), anisotropy: 0.9 });
 const brassMat = finishes.brass(0.01)[1];
 
 function plate(w, h, x) {
@@ -121,19 +136,19 @@ function axle(x, y, r, len) {
 }
 
 // ---------- The gear train: brass, silver and black, all meshing ----------
-const M = 0.0032; // tooth size (module), meters
-plate(0.42, 0.26, -0.02);
-const brass = makeGear({ teeth: 48, module: M, thickness: 0.008, finish: 'brass', web: 'spokes', spokes: 5 });
-const silver = makeGear({ teeth: 24, module: M, thickness: 0.009, finish: 'silver', web: 'holes' });
-const black = makeGear({ teeth: 16, module: M, thickness: 0.01, finish: 'black', web: 'solid' });
+const M = 0.0038; // tooth size (module), meters
+plate(0.48, 0.3, -0.01);
+const brass = makeGear({ teeth: 48, module: M, thickness: 0.012, finish: 'brass', web: 'spokes', spokes: 5 });
+const silver = makeGear({ teeth: 24, module: M, thickness: 0.014, finish: 'silver', web: 'holes' });
+const black = makeGear({ teeth: 16, module: M, thickness: 0.016, finish: 'black', web: 'solid' });
 const beta1 = THREE.MathUtils.degToRad(14);
 const beta2 = THREE.MathUtils.degToRad(-32);
-brass.group.position.set(-0.11, -0.012, 0);
+brass.group.position.set(-0.12, -0.014, 0);
 silver.group.position.copy(brass.group.position).add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar(((48 + 24) * M) / 2));
 black.group.position.copy(silver.group.position).add(V(Math.cos(beta2), Math.sin(beta2)).multiplyScalar(((24 + 16) * M) / 2));
 for (const g of [brass, silver, black]) {
   scene.add(g.group);
-  axle(g.group.position.x, g.group.position.y, g.bore * 0.95, 0.04);
+  axle(g.group.position.x, g.group.position.y, g.bore * 0.95, 0.046);
 }
 
 // ---------- Bike gears: silver chainring on a black spider, black rear cog, chain ----------
@@ -218,14 +233,20 @@ const VIEWS = {
   train: {
     label: 'Gear train',
     note: 'Brass, silver and black gears turning together on a brushed aluminium plate.',
-    target: V(-0.02, 0, 0),
-    from: V(0.06, 0.07, 0.62),
+    target: V(-0.01, 0, 0),
+    from: V(0.07, 0.08, 0.7),
+  },
+  mesh: {
+    label: 'Teeth close-up',
+    note: 'Where the brass teeth bite into the silver ones. Each tooth rolls against the next, with no slack.',
+    target: brass.group.position.clone().add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar((48 * M) / 2)),
+    from: brass.group.position.clone().add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar((48 * M) / 2)).add(V(0.04, 0.07, 0.13)),
   },
   brass: {
     label: 'Brass',
-    note: 'Satin brass, 48 teeth, five spokes. Fine lathe rings catch the light as it turns.',
+    note: 'Satin brass, 48 teeth, five spokes. The machined face throws a bow-tie highlight as it turns.',
     target: brass.group.position.clone(),
-    from: V(0.03, 0.09, 0.27),
+    from: V(0.03, 0.1, 0.32),
   },
   silver: {
     label: 'Silver',
@@ -290,6 +311,7 @@ function resize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
   renderer.setSize(w, h, false);
+  composer.setSize(w, h);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
 }
@@ -329,7 +351,7 @@ function frame(now) {
     if (fly.t >= 1) fly = null;
   }
   controls.update();
-  renderer.render(scene, camera);
+  composer.render();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
