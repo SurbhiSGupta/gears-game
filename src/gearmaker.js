@@ -410,3 +410,131 @@ export function toothRadius(teeth, module, phi) {
   }
   return (lo + hi) / 2;
 }
+
+// ---------- Bevel gears: cone-shaped gears that turn a drive around a corner ----------
+// The spur outline is laid on the gear's back cone, then every tooth narrows in a straight
+// line toward the apex, where the two gears' axes cross. Two bevel gears whose cone angles
+// add up to 90° mesh at a right angle. Axis is local z; the apex sits at (0, 0, apexZ).
+export function makeBevelGear({ teeth, module, cone, faceWidth, finish = 'brass' }) {
+  const { shape, rp, ra, rf } = gearShape(teeth, module);
+  const outline = shape.getPoints();
+  if (outline[0].distanceTo(outline[outline.length - 1]) < 1e-9) outline.pop();
+  const sinD = Math.sin(cone);
+  const cosD = Math.cos(cone);
+  const apexZ = rp / Math.tan(cone);
+  const coneDistance = rp / sinD;
+  const k = (coneDistance - faceWidth) / coneDistance;
+  // Outline point at radius r: height above the pitch circle runs along the back cone
+  const outer = (p) => {
+    const r = Math.hypot(p.x, p.y);
+    const s = (rp + (r - rp) * cosD) / r;
+    return new THREE.Vector3(p.x * s, p.y * s, (r - rp) * sinD);
+  };
+  const inner = (v) => new THREE.Vector3(v.x * k, v.y * k, apexZ + (v.z - apexZ) * k);
+  const rh = rf - 0.6 * module;
+  const holeN = teeth * 4;
+  const hole = [];
+  for (let i = 0; i < holeN; i++) {
+    const a = (-i / holeN) * TAU;
+    hole.push(new THREE.Vector2(rh * Math.cos(a), rh * Math.sin(a)));
+  }
+
+  // Flip a geometry's triangles if most of them face away from where they should
+  function orient(pos, index, want) {
+    const a = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    const c = new THREE.Vector3();
+    let score = 0;
+    for (let i = 0; i < index.length; i += 3) {
+      a.fromArray(pos, index[i] * 3);
+      b.fromArray(pos, index[i + 1] * 3);
+      c.fromArray(pos, index[i + 2] * 3);
+      const n = b.clone().sub(a).cross(c.clone().sub(a));
+      score += n.dot(want(a.add(b).add(c).divideScalar(3)));
+    }
+    if (score < 0) {
+      for (let i = 0; i < index.length; i += 3) [index[i + 1], index[i + 2]] = [index[i + 2], index[i + 1]];
+    }
+  }
+  const radial = (p) => new THREE.Vector3(p.x, p.y, 0).normalize();
+
+  // Back and front faces of the toothed ring
+  const tris = THREE.ShapeUtils.triangulateShape(outline, [hole]);
+  const flat = [...outline, ...hole];
+  function cap(map, sign) {
+    const pos = [];
+    const uv = [];
+    for (const p of flat) {
+      pos.push(...map(outer(p)).toArray());
+      uv.push(p.x, p.y);
+    }
+    const index = tris.flat();
+    orient(pos, index, (c) => radial(c).multiplyScalar(sinD).add(new THREE.Vector3(0, 0, -cosD)).multiplyScalar(sign));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(index);
+    g.computeVertexNormals();
+    return g;
+  }
+  const back = cap((v) => v, 1);
+  const front = cap(inner, -1);
+
+  // Tooth flanks, tips and roots: each outline point runs straight in toward the apex
+  function wall(loop, sign) {
+    const pos = [];
+    const uv = [];
+    const index = [];
+    let run = 0;
+    const n = loop.length;
+    for (let i = 0; i <= n; i++) {
+      const p = loop[i % n];
+      if (i > 0) run += p.distanceTo(loop[i - 1]);
+      const o = outer(p);
+      pos.push(...o.toArray(), ...inner(o).toArray());
+      uv.push(run * 40, 0, run * 40, faceWidth * 40);
+      if (i < n) {
+        const j = i * 2;
+        index.push(j, j + 2, j + 1, j + 1, j + 2, j + 3);
+      }
+    }
+    orient(pos, index, (c) => radial(c).multiplyScalar(sign));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    g.setIndex(index);
+    g.computeVertexNormals();
+    return g;
+  }
+  const flanks = wall(outline, 1);
+  const bottom = wall(hole, -1);
+
+  const [faceMat, sideMat] = finishes[finish](ra);
+  const group = new THREE.Group();
+  group.add(new THREE.Mesh(back, faceMat), new THREE.Mesh(front, faceMat), new THREE.Mesh(flanks, sideMat), new THREE.Mesh(bottom, sideMat));
+
+  // Turned body under the teeth: a web behind them and a hub with a bore, front and back
+  const hubR = Math.max(rp * 0.3, 0.01);
+  const bore = hubR * 0.42;
+  const o = outer(new THREE.Vector2(rh, 0));
+  const i = inner(o);
+  const r1 = o.x * 0.995;
+  const zB = o.z - module * 1.2;
+  const zHB = zB - Math.max(0.012, rp * 0.2);
+  const zFH = i.z + 0.006;
+  const corners = [
+    [bore, zHB], [hubR, zHB], [hubR, zB], [r1, zB], [r1, o.z], [i.x * 0.995, i.z], [hubR, i.z], [hubR, zFH], [bore, zFH], [bore, zHB],
+  ];
+  // Every corner twice, so the lathe keeps edges crisp instead of smoothing round them
+  const profile = corners.flatMap(([r, z], n) => (n === 0 || n === corners.length - 1 ? [[r, z]] : [[r, z], [r, z]]));
+  const body = new THREE.Mesh(new THREE.LatheGeometry(profile.map(([r, z]) => new THREE.Vector2(r, z)), 72).rotateX(Math.PI / 2), sideMat);
+  group.add(body);
+
+  group.traverse((m) => {
+    if (m.isMesh) {
+      m.castShadow = true;
+      m.receiveShadow = true;
+    }
+  });
+  return { group, rp, ra, apexZ, coneDistance, bore, hubR, backZ: zHB, frontZ: zFH, teeth };
+}

@@ -7,7 +7,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { makeGear, meshAngle, finishes, steel, nutStack, toothRadius, toothFlank } from './gearmaker.js';
+import { makeGear, makeBevelGear, meshAngle, finishes, steel, nutStack, toothRadius, toothFlank } from './gearmaker.js';
 import { feel, unlockAudio } from './feel.js';
 import { sprocketGeometry, pitchRadius } from './models.js';
 import { ChainPath, ChainLoop } from './chain.js';
@@ -52,7 +52,7 @@ const key = new THREE.DirectionalLight(0xfff4e6, 2.2);
 key.position.set(-0.8, 1.2, 1.6);
 key.castShadow = true;
 key.shadow.mapSize.set(2048, 2048);
-Object.assign(key.shadow.camera, { left: -1, right: 1.6, top: 0.6, bottom: -0.6, near: 0.2, far: 5 });
+Object.assign(key.shadow.camera, { left: -1.5, right: 1.6, top: 0.7, bottom: -0.7, near: 0.2, far: 5 });
 key.shadow.camera.updateProjectionMatrix();
 key.shadow.bias = -0.0002;
 key.shadow.normalBias = 0.002;
@@ -375,6 +375,92 @@ chain.setPath(chainPath);
 chain.group.position.z = ringPos.z;
 scene.add(chain.group);
 
+// ---------- Around a corner: a pair of bevel gears in the corner of a box ----------
+// The brass gear stands on the side wall and is turned by a crank outside the box. Its
+// cone-shaped teeth turn the carbon gear lying on the back panel, a quarter turn around
+// the corner, and that gear's shaft spins a small silver wheel.
+const BEVEL_X = -0.78;
+const BM = 0.004;
+const W_TEETH = 30;
+const F_TEETH = 20;
+const coneW = Math.atan(W_TEETH / F_TEETH);
+const coneF = Math.PI / 2 - coneW;
+const faceWidth = ((W_TEETH * BM) / 2 / Math.sin(coneW)) * 0.33;
+const wallGear = makeBevelGear({ teeth: W_TEETH, module: BM, cone: coneW, faceWidth, finish: 'brass' });
+const floorGear = makeBevelGear({ teeth: F_TEETH, module: BM, cone: coneF, faceWidth, finish: 'carbon' });
+const apex = V(BEVEL_X, 0, floorGear.apexZ);
+floorGear.group.position.set(BEVEL_X, 0, 0);
+// The wall gear's own axis (local z) points along -x, back toward the shared apex
+wallGear.group.position.copy(apex).add(V(wallGear.apexZ, 0, 0));
+wallGear.group.rotation.set(0, -Math.PI / 2, 0);
+scene.add(floorGear.group, wallGear.group);
+
+const WALL_X = wallGear.group.position.x - wallGear.backZ + 0.008;
+plate(0.2, 0.26, BEVEL_X - 0.025);
+{
+  const wall = new THREE.Mesh(new RoundedBoxGeometry(0.01, 0.26, 0.19, 4, 0.004), plateMat);
+  wall.position.set(WALL_X + 0.005, 0, -0.035 + 0.095);
+  wall.castShadow = true;
+  wall.receiveShadow = true;
+  scene.add(wall);
+}
+const shaftMat = boltMat;
+function shaft(from, to, r) {
+  const d = to.clone().sub(from);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 24), shaftMat);
+  m.position.copy(from).add(to).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(V(0, 1, 0), d.normalize());
+  m.castShadow = true;
+  scene.add(m);
+  return m;
+}
+function bushing(at, axis, r) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 2.2, r * 2.4, 0.008, 32), brassMat);
+  m.position.copy(at);
+  m.quaternion.setFromUnitVectors(V(0, 1, 0), axis);
+  m.castShadow = true;
+  scene.add(m);
+}
+// Upright shaft through the carbon gear, up past the corner to the silver wheel
+const SPIN_Z = 0.155;
+shaft(V(BEVEL_X, 0, -0.026), V(BEVEL_X, 0, SPIN_Z + 0.004), floorGear.bore * 0.95);
+bushing(V(BEVEL_X, 0, -0.021), V(0, 0, 1), floorGear.bore);
+const spinner = makeGear({ teeth: 14, module: 0.003, thickness: 0.006, finish: 'silver', web: 'holes' });
+spinner.group.position.set(BEVEL_X, 0, SPIN_Z);
+scene.add(spinner.group);
+{
+  const cap = nutStack(spinner.bore * 0.8, boltMat);
+  cap.position.set(BEVEL_X, 0, SPIN_Z + 0.0051);
+  scene.add(cap);
+}
+// Level shaft from the brass gear out through the wall to the crank
+const CRANK_X = WALL_X + 0.022;
+shaft(V(wallGear.group.position.x - wallGear.frontZ, 0, apex.z), V(CRANK_X + 0.006, 0, apex.z), wallGear.bore * 0.95);
+bushing(V(WALL_X + 0.013, 0, apex.z), V(1, 0, 0), wallGear.bore);
+const bevelCrank = new THREE.Group();
+{
+  const a = arm.clone(true);
+  a.rotation.z = 0;
+  a.position.z = 0;
+  bevelCrank.add(a);
+  const n = nutStack(wallGear.bore * 0.8, boltMat);
+  n.position.z = 0.0034 + 0.0012;
+  bevelCrank.add(n);
+}
+bevelCrank.scale.setScalar(0.85);
+bevelCrank.position.set(CRANK_X, 0, apex.z);
+scene.add(bevelCrank);
+
+// Keep a tooth of one gear in a gap of the other: at the contact (below the apex, toward
+// the wall) the carbon gear's tooth 0 points along +x and the brass gear's along -z.
+function turnBevel(thetaW) {
+  wallGear.group.rotation.set(0, -Math.PI / 2, thetaW);
+  bevelCrank.rotation.set(0, Math.PI / 2, -thetaW + 1.9);
+  const thetaF = ((Math.PI - Math.PI / W_TEETH - thetaW) * W_TEETH) / F_TEETH;
+  floorGear.group.rotation.z = thetaF;
+  spinner.group.rotation.z = thetaF;
+}
+
 // ---------- Views ----------
 const contact = brass.group.position.clone().add(V(Math.cos(beta1), Math.sin(beta1)).multiplyScalar((48 * M) / 2));
 const VIEWS = {
@@ -413,6 +499,12 @@ const VIEWS = {
     note: 'A real bike drivetrain: silver 32-tooth chainring on a carbon steel spider, carbon steel 16-tooth cog, steel chain.',
     target: V(BIKE_X, 0, 0),
     from: V(BIKE_X + 0.02, 0.1, 0.86),
+  },
+  bevel: {
+    label: 'Around a corner',
+    note: 'Bevel gears: cone-shaped teeth meet at a right angle. The crank outside the box turns the 30-tooth brass gear, which turns the 20-tooth carbon gear around the corner, 1.5 times as fast.',
+    target: apex.clone().add(V(0.035, 0, 0)),
+    from: apex.clone().add(V(0.072, 0.13, 0.38)),
   },
 };
 
@@ -615,6 +707,7 @@ function frame(now) {
   cog.rotation.z = crank * (ringTeeth / cogTeeth);
   chain.offset = -crank * ringR;
   chain.update();
+  turnBevel(crank * 0.8);
 
   if (fly) {
     fly.t = Math.min(1, fly.t + dt / 1.1);
